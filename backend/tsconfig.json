@@ -1,9 +1,8 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File/Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    // 1. Un-commented these to cleanly separate your raw code from compiled code
+    "rootDir": "./src",
+    "outDir": "./dist",
 
     // Environment settings
     "module": "nodenext",
@@ -17,20 +16,21 @@
     "declaration": true,
     "declarationMap": true,
 
-    // Stricter type‑checking
+    // Stricter type-checking
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
-    // Recommended
     "strict": true,
-    "jsx": "react-jsx",
 
-    // disable the flag that caused the import/export error
-    "verbatimModuleSyntax": false,
+    // Interoperability (Highly recommended for Node.js backends and LangChain)
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
 
+    // Module settings
     "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  }
+  },
+  // 2. Added these arrays so TS knows exactly what to compile and what to ignore
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
