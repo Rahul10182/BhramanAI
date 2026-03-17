@@ -8,7 +8,6 @@ export class GeoapifyProvider {
     const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(city)}&apiKey=${API_KEY}`;
     const response = await fetch(url);
     
-    // Check if the API request was actually successful
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Geocoding API failed (${response.status}): ${errorText}`);
@@ -33,7 +32,6 @@ export class GeoapifyProvider {
     
     const response = await fetch(url);
     
-    // Check if the API request was actually successful
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Places API failed (${response.status}): ${errorText}`);
@@ -44,6 +42,7 @@ export class GeoapifyProvider {
     return (data.features || []).map((place: any) => {
       const prop = place.properties;
       return {
+        placeId: prop.place_id, // <-- ADDED: The AI needs this ID to get details or check availability!
         name: prop.name || "Unknown Hotel",
         address: prop.formatted || "No address provided",
         lat: prop.lat,
@@ -51,6 +50,68 @@ export class GeoapifyProvider {
         image: `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${prop.lon},${prop.lat}&zoom=15&apiKey=${API_KEY}`
       };
     });
+  }
+
+  // NEW METHOD: Get Hotel Details
+  async getHotelDetails(hotelId: string) {
+    const url = `https://api.geoapify.com/v2/place-details?id=${hotelId}&apiKey=${API_KEY}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Place Details API failed (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.features || data.features.length === 0) {
+      throw new Error(`Hotel details not found for ID: ${hotelId}`);
+    }
+
+    const prop = data.features[0].properties;
+    
+    return {
+      placeId: prop.place_id,
+      name: prop.name || "Unknown Hotel",
+      address: prop.formatted || "No address provided",
+      website: prop.website || "No website available",
+      phone: prop.contact?.phone || "No phone number available",
+      categories: prop.categories || [],
+      lat: prop.lat,
+      lon: prop.lon
+    };
+  }
+
+  // NEW METHOD: Check Availability (Mocked)
+  async checkAvailability(hotelId: string, checkIn: string, checkOut: string) {
+    // Geoapify does not provide live booking data. 
+    // We mock a realistic response so the LangGraph AI can continue planning.
+    
+    // Generate a pseudo-random price based on the hotelId string length to keep it consistent
+    const basePrice = 2000 + (hotelId.length * 150); 
+
+    return {
+      hotelId,
+      checkIn,
+      checkOut,
+      isAvailable: true,
+      options: [
+        {
+          roomType: "Standard Room",
+          pricePerNight: `₹${basePrice}`,
+          currency: "INR",
+          amenities: ["Free WiFi", "Air Conditioning", "TV"]
+        },
+        {
+          roomType: "Deluxe Suite",
+          pricePerNight: `₹${basePrice + 2500}`,
+          currency: "INR",
+          amenities: ["Free WiFi", "Air Conditioning", "TV", "Mini Bar", "City View"]
+        }
+      ],
+      bookingPolicy: "Free cancellation up to 48 hours before check-in."
+    };
   }
 
   estimatePrice(categories: string): string {
