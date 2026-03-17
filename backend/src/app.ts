@@ -1,4 +1,5 @@
-import express from "express";
+// src/app.ts
+import express, { Request, Response } from "express";
 import cors from "cors";
 
 const app = express();
@@ -6,8 +7,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("AI Travel Planner Backend Running 🚀");
+app.get("/", (req: Request, res: Response) => {
+  res.send("BhramanAI Backend Running 🚀");
 });
 
 export default app;
