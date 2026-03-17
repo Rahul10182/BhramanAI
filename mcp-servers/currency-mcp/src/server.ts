@@ -13,7 +13,12 @@ const server = new McpServer({
 });
 
 // Register the tool using the modern, simplified syntax
-server.tool("convert_currency", convertCurrencySchema, handleConvertCurrency);
+server.tool(
+  "convert_currency", 
+  "Converts an amount of money from one currency to another using live exchange rates.",
+  convertCurrencySchema, 
+  handleConvertCurrency
+);
 
 // Start the server
 async function run() {
