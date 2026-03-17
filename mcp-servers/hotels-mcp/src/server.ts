@@ -5,6 +5,8 @@ import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprot
 import { GeoapifyProvider } from "./providers/geoapify.provider.js";
 import { searchHotelsTool } from "./tools/searchHotels.tool.js";
 import { nearbyFoodTool } from "./tools/searchFood.tool.js";
+import { hotelDetailsTool } from "./tools/hotelDetails.tool.js";
+import { checkAvailabilityTool } from "./tools/checkAvailability.tool.js";
 
 const server = new Server(
   {
@@ -20,14 +22,19 @@ const server = new Server(
 
 const provider = new GeoapifyProvider();
 
-// Register Tools
+// 2. Register all 4 tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: [searchHotelsTool, nearbyFoodTool],
+    tools: [
+      searchHotelsTool, 
+      nearbyFoodTool, 
+      hotelDetailsTool, 
+      checkAvailabilityTool
+    ],
   };
 });
 
-// Handle Tool Execution
+// 3. Handle Tool Execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
@@ -48,6 +55,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       
       return {
         content: [{ type: "text", text: JSON.stringify(food, null, 2) }],
+      };
+    }
+
+    // NEW: Hotel Details Block
+    else if (name === "get_hotel_details") {
+      const hotelId = String(args?.hotelId);
+      const details = await provider.getHotelDetails(hotelId);
+      
+      return {
+        content: [{ type: "text", text: JSON.stringify(details, null, 2) }],
+      };
+    }
+
+    // NEW: Check Availability Block
+    else if (name === "check_hotel_availability") {
+      const hotelId = String(args?.hotelId);
+      const checkIn = String(args?.checkIn);
+      const checkOut = String(args?.checkOut);
+      
+      const availability = await provider.checkAvailability(hotelId, checkIn, checkOut);
+      
+      return {
+        content: [{ type: "text", text: JSON.stringify(availability, null, 2) }],
       };
     }
 

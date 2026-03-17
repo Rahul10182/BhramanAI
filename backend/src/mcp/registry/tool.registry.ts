@@ -29,10 +29,10 @@ export class ToolRegistry {
      * Aggregates all tools across all connected MCP servers.
      */
     public static async getAllAvailableTools() {
-        // add these in const -> hotelTools, weatherTools, currencyTools
-        const [flightTools] = await Promise.all([
+        // add these in const -> hotelTools, weatherTools,hotelTools.currencyTools
+        const [flightTools,hotelTools] = await Promise.all([
             // this.getServerTools(serverRegistry.flights),
-            // this.getServerTools(serverRegistry.hotels),
+            this.getServerTools(serverRegistry.hotels),
             // this.getServerTools(serverRegistry.weather),
             this.getServerTools(serverRegistry.currency),
             // this.getServerTools(serverRegistry.activities)
@@ -40,7 +40,7 @@ export class ToolRegistry {
 
         return [
             ...flightTools,
-            // ...hotelTools,
+            ...hotelTools,
             // ...weatherTools,
             // ...currencyTools
         ];
