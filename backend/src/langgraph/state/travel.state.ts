@@ -1,49 +1,57 @@
+import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { BaseMessage } from "@langchain/core/messages";
-import { Annotation } from "@langchain/langgraph";
 
-// This is the "Shared Whiteboard" for all your agents
-export const TravelState = Annotation.Root({
-  // 1. Conversation History (Appends new messages to the array)
-  messages: Annotation<BaseMessage[]>({
-    reducer: (currentState, newMessages) => currentState.concat(newMessages),
-    default: () => [],
-  }),
-  
-  // 2. Extracted Trip Details (Overwrites old data with new data)
-  source_city: Annotation<string>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => "",
-  }),
-  destination_city: Annotation<string>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => "",
-  }),
-  travel_date: Annotation<string>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => "",
-  }),
-  
-  // 3. Worker Agent Outputs (Stores the JSON responses from your APIs)
-  flight_data: Annotation<any>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => null,
-  }),
-  hotel_data: Annotation<any>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => null,
-  }),
-  weather_data: Annotation<any>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => null,
-  }),
+// Define the core trip metadata that agents need to respect
+export interface TripContext {
+    destinations: string[];
+    startDate?: string;
+    endDate?: string;
+    totalBudget?: number;
+    baseCurrency: string; // Used for the currency MCP client
+    travelerCount: number;
+    preferences: string[]; // e.g., ["luxury", "vegan", "museums"]
+}
 
-  // 4. Orchestration / Routing Flag
-  // The supervisor will update this to tell the graph where to go next
-  next_worker: Annotation<string>({
-    reducer: (currentState, newValue) => newValue ?? currentState,
-    default: () => "planner",
-  })
+// The root annotation for the entire travel graph
+export const TravelStateAnnotation = Annotation.Root({
+    // Standard message history for the LLM
+    messages: Annotation<BaseMessage[]>({
+        reducer: messagesStateReducer,
+        default: () => [],
+    }),
+    
+    // Core details about the trip being planned
+    tripContext: Annotation<TripContext>({
+        reducer: (curr, update) => ({ ...curr, ...update }),
+        default: () => ({ 
+            destinations: [], 
+            baseCurrency: "USD", 
+            travelerCount: 1, 
+            preferences: [] 
+        }),
+    }),
+
+    // Data gathered from the Hotel MCP client
+    selectedHotels: Annotation<any[]>({
+        reducer: (curr, update) => [...curr, ...update], // Append new hotel selections
+        default: () => [],
+    }),
+
+    // Data gathered from the Attraction/Activity MCP client
+    selectedActivities: Annotation<any[]>({
+        reducer: (curr, update) => [...curr, ...update], // Append new activities
+        default: () => [],
+    }),
+
+    // Global tracking of estimated costs to validate against totalBudget
+    estimatedCost: Annotation<number>({
+        reducer: (curr, update) => update ?? curr, // Overwrite with latest calculation
+        default: () => 0,
+    }),
+
+    // Tracks the overall progress of the system
+    currentStage: Annotation<"planning" | "booking" | "completed">({
+        reducer: (curr, update) => update,
+        default: () => "planning",
+    })
 });
-
-// Export the type so your nodes know what structure to expect
-export type TravelStateType = typeof TravelState.State;
