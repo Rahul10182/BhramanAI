@@ -33,7 +33,7 @@ export class ToolRegistry {
         const [hotelTools, currencyTools, activityTools] = await Promise.all([
             // this.getServerTools(serverRegistry.flights),
             this.getServerTools(serverRegistry.hotels),
-            // this.getServerTools(serverRegistry.weather),
+            this.getServerTools(serverRegistry.weather),
             this.getServerTools(serverRegistry.currency),
             this.getServerTools(serverRegistry.activities) // <-- Added Activity tools
         ]);
