@@ -30,8 +30,8 @@ export class ToolRegistry {
      */
     public static async getAllAvailableTools() {
         // Fixed destructuring to exactly match the array inside Promise.all
-        const [hotelTools, currencyTools, activityTools] = await Promise.all([
-            // this.getServerTools(serverRegistry.flights),
+        const [hotelTools, currencyTools, activityTools, weatherTools, flightTools] = await Promise.all([
+            this.getServerTools(serverRegistry.flights),
             this.getServerTools(serverRegistry.hotels),
             this.getServerTools(serverRegistry.weather),
             this.getServerTools(serverRegistry.currency),
@@ -39,11 +39,11 @@ export class ToolRegistry {
         ]);
 
         return [
-            // ...flightTools,
+            ...flightTools,
             ...hotelTools,
             ...currencyTools,
-            ...activityTools // <-- Added Activity tools to the final list
-            // ...weatherTools,
+            ...activityTools, // <-- Added Activity tools to the final list
+            ...weatherTools
         ];
     }
 }
