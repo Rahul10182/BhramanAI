@@ -2,21 +2,21 @@
 import { HotelMCPClient } from '../client/hotel.client.js';
 // import { WeatherMCPClient } from '../client/weather.client.js';
 import { CurrencyMCPClient } from '../client/currency.client.js';
-// import { ActivityMCPClient } from '../client/activity.client.js';
+import { ActivityMCPClient } from '../client/activity.client.js'; // <-- Uncommented
 
 class ServerRegistry {
     // public flights: FlightMCPClient;
     public hotels: HotelMCPClient;
     // public weather: WeatherMCPClient;
     public currency: CurrencyMCPClient;
-    // public activities: ActivityMCPClient;
+    public activities: ActivityMCPClient; // <-- Uncommented
 
     constructor() {
         // this.flights = new FlightMCPClient();
         this.hotels = new HotelMCPClient();
         // this.weather = new WeatherMCPClient();
         this.currency = new CurrencyMCPClient();
-        // this.activities = new ActivityMCPClient();
+        this.activities = new ActivityMCPClient(); // <-- Uncommented
     }
 
     public async initializeAll(): Promise<void> {
@@ -28,7 +28,7 @@ class ServerRegistry {
                 this.hotels.connect(),
                 // this.weather.connect(),
                 this.currency.connect(),
-                // this.activities.connect() // Uncomment when activities-mcp is built
+                this.activities.connect() // <-- Uncommented
             ]);
             console.log('[MCP] All tool servers connected and ready.');
         } catch (error) {
