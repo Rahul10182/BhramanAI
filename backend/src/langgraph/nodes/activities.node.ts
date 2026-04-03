@@ -12,12 +12,24 @@ export const activitiesNode = async (state: PlannerState) => {
     }
 
     try {
-        // Hand the context over to the specialized Activity Agent
         const topActivities = await runActivityAgent(destination);
 
-        // Save the clean data back to the LangGraph State
+        // --- SAFETY FILTER: Clean, Unique, and Validated ---
+        let uniqueActivities = [];
+        
+        if (Array.isArray(topActivities)) {
+            uniqueActivities = topActivities
+                .filter(act => act && act.name && act.name !== "Unknown Attraction") // 1. Must have a name
+                .filter((act, index, self) => 
+                    index === self.findIndex((t) => t.name === act.name) // 2. Remove duplicates by name
+                )
+                .slice(0, 5); // 3. Ensure we don't exceed the limit
+        }
+
+        console.log(`✅ [Node] Successfully processed ${uniqueActivities.length} unique activities.`);
+
         return {
-            selectedActivities: Array.isArray(topActivities) ? topActivities : []
+            selectedActivities: uniqueActivities
         };
         
     } catch (error) {
