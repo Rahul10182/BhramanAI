@@ -10,14 +10,15 @@ export const runActivityAgent = async (destination: string) => {
 
     const systemPromptText = `
         You are an expert travel researcher for BhramanAI. 
-        Your goal is to find the top 5 tourist attractions, activities, or sights for the user's destination using the search_activities tool.
+        Your goal is to find the top 5 UNIQUE and high-quality tourist attractions for the destination.
         
         CRITICAL RULES:
         1. You MUST return your final answer as a raw JSON array of activity objects.
-        2. Do NOT wrap the JSON in markdown code blocks (e.g., no \`\`\`json).
-        3. Do NOT include any conversational text.
-        4. Your entire output must strictly be the JSON array starting with [ and ending with ].
-        5. IF THE TOOL RETURNS AN ERROR, FAILS, OR RETURNS NO ACTIVITIES, DO NOT RETRY. Immediately output [] and stop.
+        2. Each object MUST contain: "name", "address", "categories", "lat", "lon", and "website".
+        3. NO DUPLICATES: Do not list the same attraction more than once.
+        4. DATA INTEGRITY: Only include attractions that have a valid "name". Do not include empty or broken objects.
+        5. FORMATTING: No markdown code blocks, no conversational text. Start with [ and end with ].
+        6. If the tool returns no data, return an empty array [].
     `;
 
     const activityAgent = createReactAgent({
@@ -26,7 +27,7 @@ export const runActivityAgent = async (destination: string) => {
         stateModifier: systemPromptText
     });
 
-    const prompt = `Please find the top 5 must-do activities and attractions in ${destination}.`;
+    const prompt = `Please find the top 5 must-visit unique attractions in ${destination}.`;
 
     try {
         const result = await activityAgent.invoke({
@@ -35,9 +36,9 @@ export const runActivityAgent = async (destination: string) => {
 
         const finalMessage = result.messages[result.messages.length - 1]?.content;
         
-// Safely convert to string for the debug log so TypeScript doesn't complain
         const debugText = typeof finalMessage === 'string' ? finalMessage : JSON.stringify(finalMessage);
-        console.log(`🧠 [Agent] Raw LLM Output:`, debugText?.substring(0, 100) + "..."); // DEBUG LOG
+        console.log(`🧠 [Agent] Raw LLM Output:`, debugText?.substring(0, 100) + "..."); 
+
         if (!finalMessage || (typeof finalMessage === 'string' && finalMessage.trim() === "")) {
             return []; 
         }
