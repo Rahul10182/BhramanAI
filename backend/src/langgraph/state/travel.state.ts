@@ -27,13 +27,18 @@ export const TravelStateAnnotation = Annotation.Root({
         }),
     }),
 
-    // The final destination for the data
     selectedHotels: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],
     }),
 
     selectedActivities: Annotation<any[]>({
+        reducer: (curr, update) => update, 
+        default: () => [],
+    }),
+
+    // --- NEW: Final storage for food recommendations ---
+    selectedFood: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],
     }),

@@ -23,13 +23,18 @@ export const PlannerStateAnnotation = Annotation.Root({
         default: () => [],
     }),
 
-    // The temporary bridge to pass data up to TravelState
     selectedHotels: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],
     }),
 
     selectedActivities: Annotation<any[]>({
+        reducer: (curr, update) => update, 
+        default: () => [],
+    }),
+
+    // --- NEW: Added for Food Agent findings ---
+    selectedFood: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],
     }),
