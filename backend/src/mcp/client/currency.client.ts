@@ -2,21 +2,24 @@ import { BaseMCPClient } from './mcp.client.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// ES Module fix for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class CurrencyMCPClient extends BaseMCPClient {
     constructor() {
-        // Points to the compiled output of the server file you provided
+        // 1. Path to the compiled server code
         const serverPath = path.resolve(__dirname, '../../../../mcp-servers/currency-mcp/dist/server.js');
-        super('currency', 'node', [serverPath]);
+        
+        // 2. Path to the server's specific .env file
+        const envPath = path.resolve(__dirname, '../../../../mcp-servers/currency-mcp/.env');
+
+        // 3. Pass the native Node --env-file flag before the script path!
+        super('currency', 'node', [
+            `--env-file=${envPath}`, 
+            serverPath
+        ]);
     }
 
-    /**
-     * Calls the 'convert_currency' tool on the MCP server.
-     * Arguments match the Zod schema defined in convertCurrency.tool.ts
-     */
     public async convertCurrency(amount: number, from: string, to: string) {
         return this.callTool('convert_currency', { 
             amount, 
