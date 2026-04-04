@@ -3,7 +3,7 @@ import { BaseMessage } from "@langchain/core/messages";
 
 export interface TripContext {
     destinations: string[];
-    startDate?: string;
+    start_date?: string;
     endDate?: string;
     totalBudget?: number;
     baseCurrency: string;

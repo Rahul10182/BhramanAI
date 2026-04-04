@@ -4,12 +4,12 @@ import { TripModel } from '../../database/models/trip.model.js';
 export const createTrip = async (req: Request, res: Response): Promise<void> => {
   try {
     // We now require the frontend to send the userId in the body
-    const { userId, destination, startDate, endDate, budget, travelers, travelStyle } = req.body;
+    const { userId, destination, start_date, endDate, budget, travelers, travelStyle } = req.body;
     
     const trip = new TripModel({
       userId, 
       destination,
-      startDate,
+      start_date,
       endDate,
       budget,
       travelers,

@@ -21,30 +21,42 @@ export class ToolRegistry {
     }
 
     public static async getAllAvailableTools() {
-        const [hotelTools, currencyTools, activityTools, weatherTools, flightTools] = await Promise.all([
+        // FIXED: The variable names now perfectly match the order of the Promise.all array
+        const [
+            flightTools, 
+            hotelTools, 
+            weatherTools, 
+            currencyTools, 
+            activityTools,
+            distanceTimeTools // <-- Added new tools here
+        ] = await Promise.all([
             this.getServerTools(serverRegistry.flights),
             this.getServerTools(serverRegistry.hotels),
             this.getServerTools(serverRegistry.weather),
             this.getServerTools(serverRegistry.currency),
-            this.getServerTools(serverRegistry.activities)
+            this.getServerTools(serverRegistry.activities),
+            this.getServerTools(serverRegistry.distanceTime) // <-- Added new server here
         ]);
 
+        // Combine all arrays together
         return [
             ...flightTools,
             ...hotelTools,
+            ...weatherTools,
             ...currencyTools,
             ...activityTools,
-            ...weatherTools
+            ...distanceTimeTools // <-- Spread new tools into the final array
         ];
     }
 
-    // THIS IS THE METHOD THAT WAS MISSING OR UNSAVED
     public static async getTool(toolName: string) {
         const allTools = await this.getAllAvailableTools();
         const tool = allTools.find(t => t.name === toolName);
+        
         if (!tool) {
             throw new Error(`Tool '${toolName}' not found in registry. Are the MCP servers running?`);
         }
+        
         return tool;
     }
 }
