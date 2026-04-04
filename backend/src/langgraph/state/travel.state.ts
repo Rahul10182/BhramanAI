@@ -2,8 +2,9 @@ import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { BaseMessage } from "@langchain/core/messages";
 
 export interface TripContext {
+    tripId: string;         // Required for DB linking
+    start_date: string;     // Required for DB date calculation
     destinations: string[];
-    start_date?: string;
     endDate?: string;
     totalBudget?: number;
     baseCurrency: string;
@@ -20,6 +21,8 @@ export const TravelStateAnnotation = Annotation.Root({
     tripContext: Annotation<TripContext>({
         reducer: (curr, update) => ({ ...curr, ...update }),
         default: () => ({ 
+            tripId: "",           // FIXED: Added required field
+            start_date: "",       // FIXED: Added required field
             destinations: [], 
             baseCurrency: "USD", 
             travelerCount: 1, 
@@ -37,8 +40,12 @@ export const TravelStateAnnotation = Annotation.Root({
         default: () => [],
     }),
 
-    // --- NEW: Final storage for food recommendations ---
     selectedFood: Annotation<any[]>({
+        reducer: (curr, update) => update, 
+        default: () => [],
+    }),
+    
+    selectedFlights: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],
     }),

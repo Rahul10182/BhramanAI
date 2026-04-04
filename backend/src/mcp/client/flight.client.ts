@@ -10,7 +10,11 @@ export class FlightMCPClient extends BaseMCPClient {
     constructor() {
         // Adjust 'flight-mcp' if your server folder is pluralized (e.g., 'flights-mcp')
         const serverPath = path.resolve(__dirname, '../../../../mcp-servers/flights-mcp/build/server.js');
-        super('flight', 'node', [serverPath]);
+        const envPath = path.resolve(__dirname, '../../../../mcp-servers/flights-mcp/.env');
+        super('flight', 'node', [
+            `--env-file=${envPath}`, 
+            serverPath
+        ]);
     }
 
     /**

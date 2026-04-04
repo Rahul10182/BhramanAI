@@ -1,29 +1,21 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
-import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { AIMessage } from "@langchain/core/messages";
 import { PlannerStateAnnotation } from "../state/planner.state.js";
-import { plannerNode } from "../nodes/planner.node.js";
-import { plannerTools } from "../agents/planner.agent.js";
-
-const toolsNode = new ToolNode(plannerTools);
-
-const routePlanner = (state: typeof PlannerStateAnnotation.State) => {
-    const lastMessage = state.messages[state.messages.length - 1] as AIMessage;
-    
-    // If the LLM returns tool calls, route to the tools node
-    if (lastMessage?.tool_calls && lastMessage.tool_calls.length > 0) {
-        return "tools";
-    }
-    
-    return END;
-};
+import { flightNode } from "../nodes/flights.node.js";
+import { hotelsNode } from "../nodes/hotels.node.js";
+import { activitiesNode } from "../nodes/activities.node.js";
+import { foodNode } from "../nodes/food.node.js";
 
 const builder = new StateGraph(PlannerStateAnnotation)
-    .addNode("planner_agent", plannerNode)
-    .addNode("tools", toolsNode)
-    
-    .addEdge(START, "planner_agent")
-    .addConditionalEdges("planner_agent", routePlanner)
-    .addEdge("tools", "planner_agent"); 
+    .addNode("flights", flightNode)
+    .addNode("hotels", hotelsNode)
+    .addNode("activities", activitiesNode)
+    .addNode("food", foodNode)
+
+    // Sequential execution ensures data dependency (e.g., flights dictate hotel dates)
+    .addEdge(START, "flights")
+    .addEdge("flights", "hotels")
+    .addEdge("hotels", "activities")
+    .addEdge("activities", "food")
+    .addEdge("food", END);
 
 export const plannerGraph = builder.compile();

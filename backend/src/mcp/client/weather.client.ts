@@ -10,6 +10,7 @@ export class WeatherMCPClient extends BaseMCPClient {
     constructor() {
         const serverPath = path.resolve(__dirname, '../../../../mcp-servers/weather-mcp/build/server.js');
         super('weather', 'node', [serverPath]);
+        
     }
 
     /**

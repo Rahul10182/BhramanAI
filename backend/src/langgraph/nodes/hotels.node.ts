@@ -18,7 +18,7 @@ export const hotelsNode = async (state: PlannerState) => {
         // The Agent will autonomously fetch the tools, talk to the LLM, and format the JSON.
         const topHotels = await runHotelAgent(
             destination, 
-            state.tripContext?.startDate, 
+            state.tripContext?.start_date, 
             state.tripContext?.endDate
         );
 
