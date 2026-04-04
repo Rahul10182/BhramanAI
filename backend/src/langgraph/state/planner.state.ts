@@ -11,6 +11,8 @@ export const PlannerStateAnnotation = Annotation.Root({
     tripContext: Annotation<TripContext>({
         reducer: (curr, update) => ({ ...curr, ...update }),
         default: () => ({ 
+            tripId: "",           
+            start_date: "",       
             destinations: [], 
             baseCurrency: "USD", 
             travelerCount: 1, 
@@ -33,8 +35,12 @@ export const PlannerStateAnnotation = Annotation.Root({
         default: () => [],
     }),
 
-    // --- NEW: Added for Food Agent findings ---
     selectedFood: Annotation<any[]>({
+        reducer: (curr, update) => update, 
+        default: () => [],
+    }),
+    
+    selectedFlights: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],
     }),

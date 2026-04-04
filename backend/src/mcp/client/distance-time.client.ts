@@ -10,7 +10,11 @@ export class DistanceTimeMCPClient extends BaseMCPClient {
     constructor() {
         // Ensure this path matches the folder name where you created the new server
         const serverPath = path.resolve(__dirname, '../../../../mcp-servers/distance-time-mcp/build/server.js');
-        super('distance-time', 'node', [serverPath]);
+        const envPath = path.resolve(__dirname, '../../../../mcp-servers/distance-time-mcp/.env');
+        super('distance-time', 'node', [
+            `--env-file=${envPath}`, 
+            serverPath
+        ]);
     }
 
     /**

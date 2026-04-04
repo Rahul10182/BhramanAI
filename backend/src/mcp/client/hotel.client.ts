@@ -10,7 +10,11 @@ export class HotelMCPClient extends BaseMCPClient {
     constructor() {
         // Now __dirname will work perfectly!
         const serverPath = path.resolve(__dirname, '../../../../mcp-servers/hotels-mcp/dist/server.js');
-        super('hotels', 'node', [serverPath]);
+        const envPath = path.resolve(__dirname, '../../../../mcp-servers/hotels-mcp/.env');
+        super('hotels', 'node', [
+            `--env-file=${envPath}`, 
+            serverPath
+        ]);
     }
 
     public async searchHotels(location: string, checkIn?: string, checkOut?: string, guests?: number) {

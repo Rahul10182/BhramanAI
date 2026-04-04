@@ -1,28 +1,55 @@
-import { SystemMessage } from "@langchain/core/messages";
+import { SystemMessage, ToolMessage } from "@langchain/core/messages";
 import { TravelStateAnnotation } from "../state/travel.state.js";
 import { flightLLM } from "../agents/flight.agent.js";
 
+// 👉 IMPORT YOUR FLIGHT TOOLS HERE (Adjust path to match your actual tools file)
+import { flightTools } from "../tools/flight.tools.js"; 
+
 export const flightNode = async (state: typeof TravelStateAnnotation.State) => {
-    console.error("✈️ [Node: Flight] Accessing MCP Flight Server...");
+    console.log("✈️ [Node: Flight] Accessing MCP Flight Server...");
     const { messages, tripContext } = state;
+
+    // 1. SANITIZE STATE: Strip out any unresolved tool calls from previous nodes
+    // This immediately prevents the OpenAI 400 Error.
+    const safeMessages = messages.filter(m => !(m as any).tool_calls?.length);
 
     const systemMessage = new SystemMessage({
         content: `You are the BhramanAI Flight Specialist.
-        Current Trip: ${tripContext.destinations.join(" -> ")}
-        Budget: ${tripContext.totalBudget} ${tripContext.baseCurrency}
+        Current Trip Destination: ${tripContext.destinations.join(", ")}
+        Budget: ${tripContext.totalBudget } ${tripContext.baseCurrency}
 
-        Instructions:
-        1. Search for flights using 'search_flights' with 3-letter IATA codes.
-        2. If you find a suitable flight, summarize the airline, price, and duration.
-        3. Aim to stay within the user's budget.`
+        CRITICAL INSTRUCTIONS:
+        1. NEVER ask the user for clarification. ASSUME the origin is 'BOM' (Mumbai) or 'DEL' (Delhi).
+        2. Search for flights using 'search_flights'.
+        3. Summarize the best flight option found. Be decisive.`
     });
 
-    const response = await flightLLM.invoke([systemMessage, ...messages]);
+    // 2. Initial LLM Call
+    let response = await flightLLM.invoke([systemMessage, ...safeMessages]);
 
-    // Example of how to update the 'selectedFlights' annotation
-    // In a production scenario, you'd parse the 'response' to extract structured data
+    // 3. LOCAL TOOL EXECUTION LOOP
+    if (response.tool_calls && response.tool_calls.length > 0) {
+        console.log(`🛠️ [Node: Flight] Executing ${response.tool_calls.length} tools locally...`);
+        const toolMessages = [];
+        
+        for (const toolCall of response.tool_calls) {
+            // Find the matching tool from your imported array
+            const tool = flightTools.find((t: any) => t.name === toolCall.name);
+            if (tool) {
+                const result = await tool.invoke(toolCall.args);
+                toolMessages.push(new ToolMessage({
+                    tool_call_id: toolCall.id!,
+                    content: typeof result === 'string' ? result : JSON.stringify(result)
+                }));
+            }
+        }
+        
+        // 4. Send the tool results back to the LLM to get a final, clean text summary
+        response = await flightLLM.invoke([systemMessage, ...safeMessages, response, ...toolMessages]);
+    }
+
     return { 
-        messages: [response],
+        messages: [response], // Now we are only returning a clean text summary to the global state!
         currentStage: "planning" 
     };
 };

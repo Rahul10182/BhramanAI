@@ -1,59 +1,33 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import path from "path";
-import { fileURLToPath } from "url";
+import { BaseMCPClient } from './mcp.client.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Helper to get current directory in ES Modules
+// ES Module fix for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export class ActivityMCPClient {
-    private client: Client;
-    private transport: StdioClientTransport;
-    public serverName = "ActivityMCP";
-
+export class ActivityMCPClient extends BaseMCPClient {
     constructor() {
-        // Initialize the LangGraph client side
-        this.client = new Client(
-            { name: "bhraman-backend-activity-client", version: "1.0.0" },
-            { capabilities: {} }
-        );
+        // 1. Resolve the paths for the Activity MCP server
+        // Ensure the path points to 'build/server.js' (the compiled output)
+        const serverPath = path.resolve(__dirname, '../../../../mcp-servers/activity-mcp/dist/server.js');
+        const envPath = path.resolve(__dirname, '../../../../mcp-servers/activity-mcp/.env');
 
-        // Point directly to the compiled server.js of your new MCP server
-        // Adjust the path depth (../../..) if your folder structure differs slightly
-        const serverPath = path.resolve(__dirname, "../../../../mcp-servers/activity-mcp/dist/server.js");
-
-        this.transport = new StdioClientTransport({
-            command: "node",
-            args: [serverPath],
-        });
+        // 2. Call the parent constructor (BaseMCPClient)
+        // super(serverName, command, args[])
+        super('activity', 'node', [
+            `--env-file=${envPath}`, // Injects API keys from the .env file
+            serverPath
+        ]);
     }
 
-    public async connect(): Promise<void> {
-        try {
-            await this.client.connect(this.transport);
-            console.log(`[MCP] Successfully connected to ${this.serverName} server.`);
-        } catch (error) {
-            console.error(`[MCP] Failed to connect to ${this.serverName} server.`, error);
-            throw error;
-        }
-    }
-
-    // Direct helper method for your activities.node.ts to use
+    /**
+     * Specialized helper to search for activities in a city.
+     * This calls the 'search_activities' tool on the Activity MCP server.
+     */
     public async searchActivities(city: string) {
-        return await this.client.callTool({
-            name: "search_activities",
-            arguments: { city }
+        return this.callTool('search_activities', { 
+            city: city 
         });
-    }
-
-    // Required by ToolRegistry to dynamically read available tools
-    public async listTools() {
-        return await this.client.listTools();
-    }
-
-    // Required by ToolRegistry to execute the tools from LangGraph
-    public async callTool(name: string, args: any) {
-        return await this.client.callTool({ name, arguments: args });
     }
 }
