@@ -1,26 +1,22 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { BaseMessage } from "@langchain/core/messages";
 
-// Define the core trip metadata that agents need to respect
 export interface TripContext {
     destinations: string[];
     start_date?: string;
     endDate?: string;
     totalBudget?: number;
-    baseCurrency: string; // Used for the currency MCP client
+    baseCurrency: string;
     travelerCount: number;
-    preferences: string[]; // e.g., ["luxury", "vegan", "museums"]
+    preferences: string[];
 }
 
-// The root annotation for the entire travel graph
 export const TravelStateAnnotation = Annotation.Root({
-    // Standard message history for the LLM
     messages: Annotation<BaseMessage[]>({
         reducer: messagesStateReducer,
         default: () => [],
     }),
     
-    // Core details about the trip being planned
     tripContext: Annotation<TripContext>({
         reducer: (curr, update) => ({ ...curr, ...update }),
         default: () => ({ 
@@ -31,27 +27,31 @@ export const TravelStateAnnotation = Annotation.Root({
         }),
     }),
 
-    // Data gathered from the Hotel MCP client
     selectedHotels: Annotation<any[]>({
-        reducer: (curr, update) => [...curr, ...update], // Append new hotel selections
+        reducer: (curr, update) => update, 
         default: () => [],
     }),
 
-    // Data gathered from the Attraction/Activity MCP client
     selectedActivities: Annotation<any[]>({
-        reducer: (curr, update) => [...curr, ...update], // Append new activities
+        reducer: (curr, update) => update, 
         default: () => [],
     }),
 
-    // Global tracking of estimated costs to validate against totalBudget
+    // --- NEW: Final storage for food recommendations ---
+    selectedFood: Annotation<any[]>({
+        reducer: (curr, update) => update, 
+        default: () => [],
+    }),
+
     estimatedCost: Annotation<number>({
-        reducer: (curr, update) => update ?? curr, // Overwrite with latest calculation
+        reducer: (curr, update) => update ?? curr,
         default: () => 0,
     }),
 
-    // Tracks the overall progress of the system
     currentStage: Annotation<"planning" | "booking" | "completed">({
         reducer: (curr, update) => update,
         default: () => "planning",
     })
 });
+
+export type TravelState = typeof TravelStateAnnotation.State;

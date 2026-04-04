@@ -1,33 +1,43 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-// Adjust this import path depending on where activity.tool.ts is located relative to activity.client.ts
-import { ActivityMCPClient } from "../../mcp/client/activity.client.js";
+import { ToolRegistry } from "../../mcp/registry/tool.registry.js";
 
-// Initialize the client
-export const activityClient = new ActivityMCPClient();
+export const createSearchActivitiesTool = () => {
+    return new DynamicStructuredTool({
+        name: "search_activities",
+        description: "Search for popular tourist attractions, museums, parks, and sights in a specific city.",
+        schema: z.object({
+            city: z.string().describe("The name of the city to search for activities in (e.g., 'Paris', 'Jaipur')")
+        }),
+        func: async (args) => {
+            console.log(`\n🔍 [TOOL CALL: search_activities]`);
+            console.log(`👉 INPUT FROM AGENT:`, JSON.stringify(args, null, 2));
 
-/* * IMPORTANT: Because ActivityMCPClient uses a manual connect() method,
- * ensure you call `await activityClient.connect();` somewhere in your 
- * application's startup/initialization flow before passing these tools to the LLM.
- */
+            try {
+                const mcpTool = await ToolRegistry.getTool("search_activities");
+                const responseContent = await mcpTool.execute(args);
+                
+                if (!responseContent || responseContent.length === 0) {
+                    console.log(`⚠️ OUTPUT FROM MCP: [Empty Content]`);
+                    return "[]";
+                }
 
-export const searchActivitiesTool = new DynamicStructuredTool({
-    name: "search_activities",
-    description: "Search for tourist activities, attractions, and things to do in a specific city.",
-    schema: z.object({
-        city: z.string()
-            .describe("The name of the city to search for activities (e.g., 'Paris', 'Tokyo', 'New York')")
-    }),
-    func: async ({ city }) => {
-        try {
-            // Call the specific helper method defined in your client
-            const result = await activityClient.searchActivities(city);
-            return JSON.stringify(result);
-        } catch (error: any) {
-            return `Failed to search activities: ${error.message}`;
+                const rawText = responseContent[0].text;
+                
+                // Detection for common MCP errors
+                if (rawText.includes("Error:") || rawText.includes("401") || rawText.includes("Unauthorized")) {
+                    console.log(`❌ OUTPUT FROM MCP (FAILURE):`, rawText);
+                } else {
+                    console.log(`✅ OUTPUT FROM MCP (SUCCESS): Received data.`);
+                }
+
+                return rawText;
+            } catch (error: any) {
+                console.error(`❌ TOOL SYSTEM ERROR:`, error.message);
+                return `Error: ${error.message}`;
+            }
         }
-    }
-});
+    });
+};
 
-// Export all tools in an array to easily bind them to your LangChain agent
-export const activityTools = [searchActivitiesTool];
+export const createActivityTools = () => [createSearchActivitiesTool()];

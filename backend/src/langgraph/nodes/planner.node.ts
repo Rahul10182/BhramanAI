@@ -1,33 +1,28 @@
+import { SystemMessage } from "@langchain/core/messages";
 import { PlannerStateAnnotation } from "../state/planner.state.js";
-import { ChatOpenAI } from "@langchain/openai";
-import { currencyTools } from "../tools/currency.tool.js";
-import { searchTools } from "../tools/search.tool.js";
-
-// Combine the tools we actually have ready
-const availableTools = [...currencyTools, ...searchTools];
-
-const plannerLLM = new ChatOpenAI({
-    modelName: "gpt-4o-mini", 
-    temperature: 0.2, 
-}).bindTools(availableTools); 
+import { plannerLLM } from "../agents/planner.agent.js";
 
 export const plannerNode = async (state: typeof PlannerStateAnnotation.State) => {
-    const { messages, tripContext } = state;
+    console.log("🧠 [Node: Planner] LLM is evaluating the request...");
+    const { messages, tripContext, researchNotes } = state;
 
-    const systemMessage = {
-        role: "system",
-        content: `You are an expert travel planner. You are currently planning a trip for ${tripContext.travelerCount} traveler(s).
-        Current destinations: ${tripContext.destinations.join(", ") || "Not decided yet"}.
-        User preferences: ${tripContext.preferences.join(", ") || "None specified"}.
-        Base Budget: ${tripContext.totalBudget ? `${tripContext.totalBudget} ${tripContext.baseCurrency}` : "Not specified"}.
+    const systemMessage = new SystemMessage({
+        content: `You are the BhramanAI Planner Architect.
         
-        Your job is to research the destination using the web_search tool and help the user plan their budget using the convert_currency tool.
-        Do not invent or hallucinate specific activities; rely strictly on the tools provided.`
-    };
+        [TRIP CONTEXT]
+        Destinations: ${tripContext?.destinations?.join(", ") || "Not set"}
+        Budget: ${tripContext?.totalBudget || "Not set"} ${tripContext?.baseCurrency}
+        Preferences: ${tripContext?.preferences?.join(", ") || "None"}
+        
+        [RESEARCH NOTES]
+        ${researchNotes?.length ? researchNotes.join("\n") : "No prior notes."}
 
+        [INSTRUCTIONS]
+        Use your tools to find accurate information. Draft a logical, brief itinerary based on the user's prompt. Do not hallucinate currency rates or attractions without using your tools.`
+    });
+
+    // We pass the system message first, followed by the conversation history
     const response = await plannerLLM.invoke([systemMessage, ...messages]);
-
-    return { 
-        messages: [response] 
-    };
+    
+    return { messages: [response] };
 };
