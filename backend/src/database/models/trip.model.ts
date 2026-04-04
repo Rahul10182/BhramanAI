@@ -4,7 +4,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ITrip extends Document {
   userId: mongoose.Types.ObjectId;
   destination: string;
-  startDate: Date;
+  start_date: Date;
   endDate: Date;
   budget: number;
   travelers: number;
@@ -18,7 +18,7 @@ const TripSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     destination: { type: String, required: true },
-    startDate: { type: Date, required: true },
+    start_date: { type: Date, required: true },
     endDate: { type: Date, required: true },
     budget: { type: Number, required: true },
     travelers: { type: Number, required: true, default: 1 },

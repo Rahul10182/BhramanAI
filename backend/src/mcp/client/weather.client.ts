@@ -19,10 +19,10 @@ export class WeatherMCPClient extends BaseMCPClient {
      * - start_date: string (YYYY-MM-DD)
      * - days: number
      */
-    public async getForecast(location: string, startDate: string, days: number = 3) {
+    public async getForecast(location: string, start_date: string, days: number = 3) {
         return this.callTool('get_weather_forecast', { 
             location: location, 
-            start_date: startDate, 
+            start_date: start_date, 
             days: days 
         });
     }

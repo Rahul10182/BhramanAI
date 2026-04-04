@@ -1,6 +1,12 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
+import { clear } from "node:console";
+
+// 1. Initialize the search tool once outside the function for better performance
+const ddgSearch = new DuckDuckGoSearch({
+    maxResults: 3,
+});
 
 export const webSearchTool = new DynamicStructuredTool({
     name: "web_search",
@@ -10,17 +16,16 @@ export const webSearchTool = new DynamicStructuredTool({
     }),
     func: async ({ query }) => {
         try {
-            console.log(`[Search Tool] Executing DuckDuckGo search for: ${query}`);
+            console.log(`[Search Tool] Executing DuckDuckGo search for: "${query}"`);
             
-            const ddgTool = new DuckDuckGoSearch({
-                 maxResults: 3, 
-            });
+            // 2. Execute the search
+            const results = await ddgSearch.invoke(query);
             
-            const results = await ddgTool.invoke(query);
-            return results;
+            // 3. Ensure the result is always a string (prevents agent crashing)
+            return typeof results === 'string' ? results : JSON.stringify(results);
             
         } catch (error: any) {
-             console.error(`[Search Tool Error]:`, error);
+            console.error(`[Search Tool Error]:`, error.message);
             return `Search failed: ${error.message}`;
         }
     }

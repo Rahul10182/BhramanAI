@@ -4,7 +4,7 @@ import { BaseMessage } from "@langchain/core/messages";
 // Define the core trip metadata that agents need to respect
 export interface TripContext {
     destinations: string[];
-    startDate?: string;
+    start_date?: string;
     endDate?: string;
     totalBudget?: number;
     baseCurrency: string; // Used for the currency MCP client

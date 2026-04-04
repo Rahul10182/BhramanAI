@@ -10,12 +10,12 @@ export async function getCoordinates(placeName) {
     }
     return null;
 }
-export async function getWeatherData(lat, lon, startDateStr, numDays) {
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(startDate);
+export async function getWeatherData(lat, lon, start_dateStr, numDays) {
+    const start_date = new Date(start_dateStr);
+    const endDate = new Date(start_date);
     endDate.setDate(endDate.getDate() + (numDays - 1));
     const endDateStr = endDate.toISOString().split('T')[0];
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&start_date=${startDateStr}&end_date=${endDateStr}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&start_date=${start_dateStr}&end_date=${endDateStr}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
     const response = await fetch(url);
     if (!response.ok)
         throw new Error(`Weather API failed: ${response.status}`);

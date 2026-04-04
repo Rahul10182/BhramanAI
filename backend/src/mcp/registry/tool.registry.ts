@@ -2,10 +2,6 @@ import { serverRegistry } from './server.registry.js';
 
 export class ToolRegistry {
     
-    /**
-     * Retrieves all available tools from a specific MCP server and 
-     * formats them for easy consumption by LangGraph/LangChain.
-     */
     public static async getServerTools(serverClient: any) {
         try {
             const response = await serverClient.listTools();
@@ -13,37 +9,54 @@ export class ToolRegistry {
                 name: tool.name,
                 description: tool.description,
                 inputSchema: tool.inputSchema,
-                // The actual execution function that the LLM agent will trigger
                 execute: async (args: any) => {
                     const result = await serverClient.callTool(tool.name, args);
                     return result.content;
                 }
             }));
         } catch (error) {
-            console.error(`[ToolRegistry] Failed to load tools for ${serverClient.serverName}`, error);
+            console.error(`[ToolRegistry] Failed to load tools for server`, error);
             return [];
         }
     }
 
-    /**
-     * Aggregates all tools across all connected MCP servers.
-     */
     public static async getAllAvailableTools() {
-        // Fixed destructuring to exactly match the array inside Promise.all
-        const [hotelTools, currencyTools, activityTools, weatherTools, flightTools] = await Promise.all([
+        // FIXED: The variable names now perfectly match the order of the Promise.all array
+        const [
+            flightTools, 
+            hotelTools, 
+            weatherTools, 
+            currencyTools, 
+            activityTools,
+            distanceTimeTools // <-- Added new tools here
+        ] = await Promise.all([
             this.getServerTools(serverRegistry.flights),
             this.getServerTools(serverRegistry.hotels),
             this.getServerTools(serverRegistry.weather),
             this.getServerTools(serverRegistry.currency),
-            this.getServerTools(serverRegistry.activities) // <-- Added Activity tools
+            this.getServerTools(serverRegistry.activities),
+            this.getServerTools(serverRegistry.distanceTime) // <-- Added new server here
         ]);
 
+        // Combine all arrays together
         return [
             ...flightTools,
             ...hotelTools,
+            ...weatherTools,
             ...currencyTools,
-            ...activityTools, // <-- Added Activity tools to the final list
-            ...weatherTools
+            ...activityTools,
+            ...distanceTimeTools // <-- Spread new tools into the final array
         ];
+    }
+
+    public static async getTool(toolName: string) {
+        const allTools = await this.getAllAvailableTools();
+        const tool = allTools.find(t => t.name === toolName);
+        
+        if (!tool) {
+            throw new Error(`Tool '${toolName}' not found in registry. Are the MCP servers running?`);
+        }
+        
+        return tool;
     }
 }
