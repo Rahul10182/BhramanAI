@@ -5,6 +5,10 @@ import MongoStore from 'connect-mongo';
 import passport from 'passport';
 import authRoutes from './api/routes/auth.routes.js';
 import './config/passport.config.js';
+import tripRoutes from './api/routes/trip.routes.js';
+import itineraryRoutes from './api/routes/itinerary.routes.js';
+import userRoutes from './api/routes/user.routes.js';
+import chatRoutes from './api/routes/chat.routes.js'
 
 const app = express();
 
@@ -36,6 +40,10 @@ app.use(passport.session());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/v1/trips', tripRoutes);
+app.use('/api/v1/itineraries', itineraryRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/chat', chatRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
