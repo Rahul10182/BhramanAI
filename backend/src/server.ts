@@ -10,26 +10,29 @@ const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI; 
 
 if (!MONGODB_URI) {
-  console.error("❌ MONGODB_URI is missing in .env file");
+  console.error(" MONGODB_URI is missing in .env file");
   process.exit(1);
 }
 
 const bootServer = async () => {
     try {
+        console.log("⏳ Booting up BhramanAI Server...");
+
         // 1. Initialize MCP Servers FIRST
         await initializeMCP();
 
         // 2. Connect to MongoDB
         await mongoose.connect(MONGODB_URI);
-        console.log("✅ MongoDB connected successfully to Atlas Cluster");
+        console.log("MongoDB connected successfully to Atlas Cluster");
         
         // 3. Start the Express server ONLY after MCP and DB are ready
         app.listen(PORT, () => {
-          console.log(`🚀 Server is running on http://localhost:${PORT}`);
+          console.log(`\n🌍 Server is running at http://localhost:${PORT}`);
+          console.log(`📌 Base API URL: http://localhost:${PORT}/api/v1\n`);
         });
 
     } catch (error) {
-        console.error("❌ Fatal Boot Error:", error);
+        console.error(" Fatal Boot Error:", error);
         process.exit(1);
     }
 };

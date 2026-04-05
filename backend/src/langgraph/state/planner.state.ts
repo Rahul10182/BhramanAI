@@ -15,7 +15,9 @@ export const PlannerStateAnnotation = Annotation.Root({
             source: "",             
             start_date: "",       
             destinations: [], 
-            baseCurrency: "USD", 
+            totalDays: 0,
+            totalBudget:0,
+            baseCurrency: "INR", 
             travelerCount: 1, 
             preferences: [] 
         }),

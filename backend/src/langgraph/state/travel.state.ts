@@ -7,6 +7,7 @@ export interface TripContext {
     start_date: string;     // Required for DB date calculation
     destinations: string[];
     endDate?: string;
+    totalDays: number;
     totalBudget?: number;
     baseCurrency: string;
     travelerCount: number;
@@ -22,14 +23,27 @@ export const TravelStateAnnotation = Annotation.Root({
     tripContext: Annotation<TripContext>({
         reducer: (curr, update) => ({ ...curr, ...update }),
         default: () => ({ 
-            tripId: "",           
-            source: "",           // <-- ADDED default
+            tripId: "",    
+            source: "",             
             start_date: "",       
             destinations: [], 
-            baseCurrency: "USD", 
+            totalDays: 0,
+            totalBudget:0,
+            baseCurrency: "INR", 
             travelerCount: 1, 
-            preferences: [] 
+            preferences: []  
         }),
+    }),
+
+    // ---  Chat Onboarding Tracking ---
+    isComplete: Annotation<boolean>({
+        reducer: (curr, update) => update,
+        default: () => false,
+    }),
+
+    aiResponse: Annotation<string>({
+        reducer: (curr, update) => update,
+        default: () => "",
     }),
 
     selectedHotels: Annotation<any[]>({
