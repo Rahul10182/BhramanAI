@@ -1,6 +1,6 @@
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { BaseMessage } from "@langchain/core/messages";
-import { TripContext } from "./travel.state.js";
+import { TripContext } from "./travel.state.js"; // Pulls the updated interface
 
 export const PlannerStateAnnotation = Annotation.Root({
     messages: Annotation<BaseMessage[]>({
@@ -11,7 +11,8 @@ export const PlannerStateAnnotation = Annotation.Root({
     tripContext: Annotation<TripContext>({
         reducer: (curr, update) => ({ ...curr, ...update }),
         default: () => ({ 
-            tripId: "",           
+            tripId: "",    
+            source: "",             
             start_date: "",       
             destinations: [], 
             baseCurrency: "USD", 

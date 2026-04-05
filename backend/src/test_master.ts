@@ -50,6 +50,7 @@ async function testMasterOrchestrator() {
             tripContext: {
                 tripId: testTrip._id.toString(),
                 start_date: "2026-11-01",
+                source: "DEL",
                 destinations: ["Goa"], 
                 baseCurrency: "INR",
                 travelerCount: 2,

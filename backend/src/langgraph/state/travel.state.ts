@@ -3,6 +3,7 @@ import { BaseMessage } from "@langchain/core/messages";
 
 export interface TripContext {
     tripId: string;         // Required for DB linking
+    source: string;        
     start_date: string;     // Required for DB date calculation
     destinations: string[];
     endDate?: string;
@@ -21,8 +22,9 @@ export const TravelStateAnnotation = Annotation.Root({
     tripContext: Annotation<TripContext>({
         reducer: (curr, update) => ({ ...curr, ...update }),
         default: () => ({ 
-            tripId: "",           // FIXED: Added required field
-            start_date: "",       // FIXED: Added required field
+            tripId: "",           
+            source: "",           // <-- ADDED default
+            start_date: "",       
             destinations: [], 
             baseCurrency: "USD", 
             travelerCount: 1, 
