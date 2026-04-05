@@ -15,11 +15,11 @@ export const flightNode = async (state: typeof TravelStateAnnotation.State) => {
 
     const systemMessage = new SystemMessage({
         content: `You are the BhramanAI Flight Specialist.
-        Current Trip Destination: ${tripContext.destinations.join(", ")}
+        Route: ${tripContext.source} to ${tripContext.destinations.join(", ")}
         Budget: ${tripContext.totalBudget } ${tripContext.baseCurrency}
 
         CRITICAL INSTRUCTIONS:
-        1. NEVER ask the user for clarification. ASSUME the origin is 'BOM' (Mumbai) or 'DEL' (Delhi).
+        1. NEVER ask the user for clarification.
         2. Search for flights using 'search_flights'.
         3. Summarize the best flight option found. Be decisive.`
     });
@@ -36,7 +36,7 @@ export const flightNode = async (state: typeof TravelStateAnnotation.State) => {
             // Find the matching tool from your imported array
             const tool = flightTools.find((t: any) => t.name === toolCall.name);
             if (tool) {
-                const result = await tool.invoke(toolCall.args);
+                const result = await tool.invoke(toolCall as any);
                 toolMessages.push(new ToolMessage({
                     tool_call_id: toolCall.id!,
                     content: typeof result === 'string' ? result : JSON.stringify(result)
