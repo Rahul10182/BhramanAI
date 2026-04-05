@@ -36,17 +36,28 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
-      scope: ['profile', 'email']
+      scope: ['openid', 'profile', 'email'] // Updated scope for better compatibility
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log('Google profile received:', profile.id);
+        
         const email = profile.emails?.[0]?.value;
         if (!email) {
+          console.error('No email found in Google profile');
           return done(new Error('No email found from Google'), undefined);
         }
 
+        console.log('Google email:', email);
+        console.log('Google name:', profile.displayName);
+
         // Find or create user
         let user = await UserModel.findOne({ email });
+        
+        if (!user) {
+          // Check if user exists with googleId
+          user = await UserModel.findOne({ googleId: profile.id });
+        }
         
         if (!user) {
           // Create new user object
@@ -65,6 +76,11 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
           user = await UserModel.create(userData);
           console.log(`✅ New user created: ${user.email}`);
         } else {
+          // Update existing user if needed
+          if (!user.googleId) {
+            user.googleId = profile.id;
+            await user.save();
+          }
           console.log(`✅ User logged in: ${user.email}`);
         }
         
