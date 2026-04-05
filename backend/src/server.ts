@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import app from "./app.js";
-// import { initializeMCP } from "./config/mcp.config.js"; // Comment if not needed
+import { initializeMCP } from "./config/mcp.config.js"; 
 
 dotenv.config();
 
