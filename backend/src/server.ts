@@ -1,34 +1,29 @@
-// src/server.ts
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import app from "./app.js";
-import { initializeMCP } from "./config/mcp.config.js"; 
+// import { initializeMCP } from "./config/mcp.config.js"; // Comment if not needed
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI; 
-
-if (!MONGODB_URI) {
-  console.error(" MONGODB_URI is missing in .env file");
-  process.exit(1);
-}
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bhramanai';
 
 const bootServer = async () => {
     try {
-        console.log("⏳ Booting up BhramanAI Server...");
-
-        // 1. Initialize MCP Servers FIRST
+        // 1. Initialize MCP Servers FIRST (if you have MCP)
         await initializeMCP();
 
         // 2. Connect to MongoDB
         await mongoose.connect(MONGODB_URI);
-        console.log("MongoDB connected successfully to Atlas Cluster");
+        console.log("✅ MongoDB connected successfully");
         
-        // 3. Start the Express server ONLY after MCP and DB are ready
+        // 3. Start the Express server
         app.listen(PORT, () => {
           console.log(`\n🌍 Server is running at http://localhost:${PORT}`);
           console.log(`📌 Base API URL: http://localhost:${PORT}/api/v1\n`);
+          console.log(`📝 Google OAuth enabled`);
+          console.log(`🔗 Login with Google: http://localhost:${PORT}/api/auth/google`);
+          console.log(`✅ Ready to accept requests\n`);
         });
 
     } catch (error) {
