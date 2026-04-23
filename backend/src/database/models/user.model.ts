@@ -7,6 +7,11 @@ export interface IUser extends Document {
   avatar?: string;
   googleId?: string;
   provider: 'local' | 'google';
+  phone?: string;
+  location?: string;
+  bio?: string;
+  travelStyle?: string[];
+  languages?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +48,26 @@ const UserSchema = new Schema<IUser>({
     type: String, 
     enum: ['local', 'google'], 
     default: 'local' 
+  },
+  phone: {
+    type: String,
+    default: null
+  },
+  location: {
+    type: String,
+    default: null
+  },
+  bio: {
+    type: String,
+    default: null
+  },
+  travelStyle: {
+    type: [String],
+    default: []
+  },
+  languages: {
+    type: [String],
+    default: []
   }
 }, { 
   timestamps: true 
