@@ -8,6 +8,21 @@ export interface User {
   name?: string;
   avatar?: string;
   provider?: 'local' | 'google';
+  phone?: string;
+  location?: string;
+  bio?: string;
+  travelStyle?: string[];
+  languages?: string[];
+  createdAt?: string;
+}
+
+export interface ProfileUpdateData {
+  name?: string;
+  phone?: string;
+  location?: string;
+  bio?: string;
+  travelStyle?: string[];
+  languages?: string[];
 }
 
 export interface LoginCredentials {
@@ -33,6 +48,23 @@ class AuthApi {
       AuthApi.instance = new AuthApi();
     }
     return AuthApi.instance;
+  }
+
+  // Helper to map raw backend user to our User interface
+  private mapUser(data: any): User {
+    return {
+      id: data._id || data.id,
+      email: data.email,
+      name: data.name,
+      avatar: data.avatar,
+      provider: data.provider,
+      phone: data.phone,
+      location: data.location,
+      bio: data.bio,
+      travelStyle: data.travelStyle,
+      languages: data.languages,
+      createdAt: data.createdAt,
+    };
   }
 
   // Login with email/password
@@ -128,16 +160,8 @@ class AuthApi {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const user: User = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-          avatar: data.user.avatar,
-          provider: data.user.provider,
-        };
-        
+        const user = this.mapUser(data.user);
         localStorage.setItem('user', JSON.stringify(user));
-        
         return { success: true, user };
       } else {
         const storedUser = localStorage.getItem('user');
@@ -152,6 +176,59 @@ class AuthApi {
       if (storedUser) {
         return { success: true, user: JSON.parse(storedUser) };
       }
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  // Get full profile from /api/v1/users/me
+  async getFullProfile(): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const response = await fetch(`${API_URL}/v1/users/me`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const user = this.mapUser(data.user);
+        localStorage.setItem('user', JSON.stringify(user));
+        return { success: true, user };
+      } else {
+        return { success: false, error: data.error || 'Failed to fetch profile' };
+      }
+    } catch (error) {
+      console.error('Get profile error:', error);
+      return { success: false, error: 'Network error' };
+    }
+  }
+
+  // Update profile via PUT /api/v1/users/me
+  async updateProfile(data: ProfileUpdateData): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const response = await fetch(`${API_URL}/v1/users/me`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const user = this.mapUser(result.user);
+        localStorage.setItem('user', JSON.stringify(user));
+        return { success: true, user };
+      } else {
+        return { success: false, error: result.error || 'Update failed' };
+      }
+    } catch (error) {
+      console.error('Update profile error:', error);
       return { success: false, error: 'Network error' };
     }
   }
@@ -192,6 +269,28 @@ class AuthApi {
   getStoredUser(): User | null {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
+  }
+
+  // Get recommendations for a trip
+  async getRecommendations(tripId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await fetch(`${API_URL}/v1/recommendations/${tripId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        return { success: true, data: result };
+      } else {
+        return { success: false, error: result.error || 'Failed to fetch recommendations' };
+      }
+    } catch (error) {
+      console.error('Recommendations error:', error);
+      return { success: false, error: 'Network error' };
+    }
   }
 }
 

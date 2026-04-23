@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 
-const API_KEY = process.env.GEOAPIFY_API_KEY || "ac98020de1314f2bb80bf8403e5cb9b3";
+const API_KEY = process.env.GEOAPIFY_API_KEY ;
 
 export class GeoapifyProvider {
   async getCoordinates(city: string): Promise<{ lat: number; lon: number } | null> {

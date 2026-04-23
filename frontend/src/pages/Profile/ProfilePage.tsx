@@ -1,138 +1,169 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, Mail, Phone, MapPin, Calendar, Edit2, Camera, Heart, Award, 
-  Globe, Compass, Star, TrendingUp, Settings, Bell, Lock, LogOut, 
-  ChevronRight, CheckCircle, Coffee, Plane, Hotel, Ticket, Users, 
-  MessageCircle, Sparkles, Share2
+import {
+  User, Mail, Phone, MapPin, Calendar, Edit2, Camera,
+  Globe, Settings, Bell, Lock, LogOut,
+  ChevronRight, Share2, X
 } from 'lucide-react';
+import { authApi } from '../../apis/authApi';
+import type { User as UserType } from '../../apis/authApi';
+import { useNavigate } from 'react-router-dom';
 
 const ProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditing, setIsEditing] = useState(false);
-  
-  const profileData = {
-    name: 'Priya Sharma',
-    email: 'priya.sharma@example.com',
-    phone: '+91 98765 43210',
-    location: 'Mumbai, India',
-    bio: 'Passionate traveler exploring the world. Love photography, food, and cultural experiences.',
-    joinDate: 'January 2024',
-    travelStyle: ['Adventure', 'Culture', 'Food', 'Nature'],
-    languages: ['English', 'Hindi', 'French']
+  const [user, setUser] = useState<UserType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [formData, setFormData] = useState({
+    name: '', phone: '', location: '', bio: '',
+  });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => { loadUser(); }, []);
+
+  const loadUser = async () => {
+    setIsLoading(true);
+    let result = await authApi.getFullProfile();
+    if (!result.success) result = await authApi.getCurrentUser();
+    if (result.success && result.user) setUser(result.user);
+    else setUser(null);
+    setIsLoading(false);
   };
 
-  const stats = [
-    { label: 'Countries', value: 15, icon: Globe, color: 'from-purple-500 to-pink-500' },
-    { label: 'Trips', value: 24, icon: Compass, color: 'from-blue-500 to-cyan-500' },
-    { label: 'Days', value: 187, icon: Calendar, color: 'from-orange-500 to-red-500' },
-    { label: 'Photos', value: 892, icon: Camera, color: 'from-green-500 to-emerald-500' },
-  ];
+  const openEditModal = () => {
+    if (user) {
+      setFormData({
+        name: user.name || '', phone: user.phone || '',
+        location: user.location || '', bio: user.bio || '',
+      });
+      setAvatarPreview(null);
+      setSaveError('');
+    }
+    setIsEditing(true);
+  };
 
-  const recentTrips = [
-    { destination: 'Bali, Indonesia', date: 'May 2024', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', rating: 5 },
-    { destination: 'Paris, France', date: 'March 2024', image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400', rating: 5 },
-    { destination: 'Tokyo, Japan', date: 'December 2023', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400', rating: 5 },
-  ];
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 800 * 1024) { setSaveError('Image must be under 800KB'); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
-  const achievements = [
-    { title: 'Globe Trotter', description: 'Visited 3 continents', icon: Globe, progress: 60 },
-    { title: 'Culture Enthusiast', description: 'Visited 50+ museums', icon: Award, progress: 80 },
-    { title: 'Food Explorer', description: 'Tried 100+ local dishes', icon: Coffee, progress: 75 },
-  ];
+  const handleSave = async () => {
+    setIsSaving(true); setSaveError('');
+    const payload: any = { ...formData };
+    if (avatarPreview) payload.avatar = avatarPreview;
+    const result = await authApi.updateProfile(payload);
+    if (result.success && result.user) { setUser(result.user); setIsEditing(false); }
+    else setSaveError(result.error || 'Failed to save');
+    setIsSaving(false);
+  };
 
-  const tabs = ['overview', 'achievements', 'settings'];
-  const badges = [
-    { name: 'Early Explorer', icon: Compass, color: 'from-purple-500 to-pink-500' },
-    { name: 'Photo Master', icon: Camera, color: 'from-blue-500 to-cyan-500' },
-    { name: 'Food Critic', icon: Coffee, color: 'from-orange-500 to-red-500' },
-    { name: 'Social Butterfly', icon: Users, color: 'from-green-500 to-emerald-500' },
-  ];
+  const handleLogout = async () => { await authApi.logout(); navigate('/'); };
 
+  const getJoinDate = () => {
+    if (!user?.createdAt) return 'Recently';
+    return new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const tabs = ['overview', 'settings'];
   const settingsItems = [
     { icon: Bell, label: 'Notifications', desc: 'Manage preferences' },
-    { icon: Lock, label: 'Privacy', desc: 'Control settings' },
-    { icon: Globe, label: 'Language', desc: 'Change preference' },
-    { icon: LogOut, label: 'Log Out', desc: 'Sign out' },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FDFCFB]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#8BA889]" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FDFCFB] p-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border border-[#D6C7B1]/20">
+          <div className="w-20 h-20 bg-[#8BA889]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-[#4A5D4B]" />
+          </div>
+          <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">Authentication Required</h2>
+          <p className="text-[#2D2D2D]/70 mb-8">Please sign in to view and manage your profile.</p>
+          <div className="flex flex-col gap-4">
+            <button onClick={() => navigate('/login')} className="w-full py-3 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all">Sign In</button>
+            <button onClick={() => navigate('/signup')} className="w-full py-3 border-2 border-[#8BA889] text-[#4A5D4B] rounded-xl font-medium hover:bg-[#8BA889]/5 transition-all">Create an Account</button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const displayName = user.name || user.email.split('@')[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FDFCFB] via-white to-[#D6C7B1]/10 py-12">
-      {/* Decorative Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-40 left-10 w-72 h-72 bg-[#8BA889]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-[#D6C7B1]/10 rounded-full blur-3xl" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#8BA889]/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#D6C7B1]/20 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
+      <div className="max-w-5xl mx-auto px-4 relative z-10">
         {/* Profile Header */}
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} 
-          className="bg-white rounded-3xl shadow-xl overflow-hidden border border-[#D6C7B1]/20 mb-8">
-          
-          {/* Cover Image */}
-          <div className="relative h-48 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889]">
-            <button className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-xl text-sm font-medium flex items-center gap-2">
-              <Camera size={16} /> Change Cover
-            </button>
+        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-[#D6C7B1]/30 mb-8">
+          <div className="relative h-56 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay opacity-60" />
           </div>
 
-          {/* Profile Info */}
           <div className="relative px-8 pb-8">
-            <div className="flex flex-col md:flex-row items-center gap-6 -mt-20 mb-6">
+            <div className="flex flex-col md:flex-row items-center gap-8 -mt-20 mb-6">
               <div className="relative group">
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-[#4A5D4B] to-[#8BA889] flex items-center justify-center shadow-xl">
-                  <User className="w-16 h-16 text-white" />
+                <div className="w-36 h-36 rounded-full border-4 border-white bg-gradient-to-br from-[#4A5D4B] to-[#8BA889] flex items-center justify-center shadow-2xl overflow-hidden">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-16 h-16 text-white" />
+                  )}
                 </div>
-                <button className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center">
-                  <Camera className="w-4 h-4 text-[#4A5D4B]" />
-                </button>
               </div>
-              
-              <div className="text-center md:text-left flex-1">
+
+              <div className="text-center md:text-left flex-1 pt-8 md:pt-0">
                 <div className="flex items-center gap-3 justify-center md:justify-start">
-                  <h1 className="text-3xl font-bold text-[#2D2D2D]">{profileData.name}</h1>
-                  <button onClick={() => setIsEditing(true)} className="p-2 rounded-lg hover:bg-gray-100">
-                    <Edit2 className="w-4 h-4 text-[#8BA889]" />
+                  <h1 className="text-4xl font-bold text-[#2D2D2D] tracking-tight">{displayName}</h1>
+                  <button onClick={openEditModal} className="p-2 rounded-full hover:bg-black/10 transition-colors">
+                    <Edit2 className="w-5 h-5 text-black" />
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-4 mt-2 justify-center md:justify-start">
-                  <div className="flex items-center gap-1 text-sm text-[#2D2D2D]/60">
-                    <MapPin size={16} /> {profileData.location}
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-[#2D2D2D]/60">
-                    <Calendar size={16} /> Member since {profileData.joinDate}
+                <div className="flex flex-wrap gap-3 mt-3 justify-center md:justify-start">
+                  {user.location && (
+                    <div className="flex items-center gap-1.5 text-sm font-medium px-3 py-1 bg-white/60 rounded-full shadow-sm text-[#2D2D2D]/70 border border-[#D6C7B1]/30">
+                      <MapPin size={14} className="text-[#8BA889]" /> {user.location}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 text-sm font-medium px-3 py-1 bg-white/60 rounded-full shadow-sm text-[#2D2D2D]/70 border border-[#D6C7B1]/30">
+                    <Calendar size={14} className="text-[#8BA889]" /> Joined {getJoinDate()}
                   </div>
                 </div>
-                <p className="mt-3 text-[#2D2D2D]/70 max-w-2xl">{profileData.bio}</p>
+                {user.bio && <p className="mt-4 text-[#2D2D2D]/70 max-w-2xl text-lg leading-relaxed">{user.bio}</p>}
               </div>
-              
-              <button className="px-6 py-2.5 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white rounded-xl font-medium shadow-lg flex items-center gap-2">
-                <Share2 size={16} /> Share Profile
-              </button>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-[#D6C7B1]/20">
-              {stats.map((stat, idx) => (
-                <div key={idx} className="text-center">
-                  <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center mx-auto mb-2`}>
-                    <stat.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="text-xl font-bold text-[#2D2D2D]">{stat.value}</p>
-                  <p className="text-xs text-[#2D2D2D]/60">{stat.label}</p>
-                </div>
-              ))}
             </div>
           </div>
         </motion.div>
 
-        {/* Tabs Navigation */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+        {/* Tabs */}
+        <div className="flex gap-3 mb-8">
           {tabs.map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-xl capitalize transition-all whitespace-nowrap ${
-                activeTab === tab ? 'bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white shadow-lg' 
-                : 'bg-white text-[#2D2D2D]/70 hover:bg-gray-50'
+              className={`px-8 py-3.5 rounded-2xl capitalize transition-all duration-300 font-medium text-lg ${
+                activeTab === tab
+                  ? 'bg-[#2D2D2D] text-white shadow-xl scale-105'
+                  : 'bg-white/80 backdrop-blur-sm text-[#2D2D2D]/70 hover:bg-white border border-[#D6C7B1]/20 shadow-sm'
               }`}>
               {tab}
             </button>
@@ -141,117 +172,123 @@ const ProfilePage: React.FC = () => {
 
         {/* Tab Content */}
         <AnimatePresence mode="wait">
-          {/* Overview Tab */}
           {activeTab === 'overview' && (
-            <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
-              {/* Personal Info */}
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#D6C7B1]/20">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><User size={20} className="text-[#8BA889]" /> Personal Information</h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="flex items-center gap-3 p-4 bg-[#8BA889]/5 rounded-xl">
-                    <Mail className="text-[#8BA889]" size={20} />
-                    <div><p className="text-xs text-[#2D2D2D]/60">Email</p><p className="font-medium">{profileData.email}</p></div>
-                  </div>
-                  <div className="flex items-center gap-3 p-4 bg-[#8BA889]/5 rounded-xl">
-                    <Phone className="text-[#8BA889]" size={20} />
-                    <div><p className="text-xs text-[#2D2D2D]/60">Phone</p><p className="font-medium">{profileData.phone}</p></div>
-                  </div>
-                </div>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <span className="text-sm font-medium">Travel Style:</span>
-                  {profileData.travelStyle.map((style, idx) => (
-                    <span key={idx} className="px-3 py-1 bg-[#8BA889]/10 rounded-full text-sm text-[#4A5D4B]">{style}</span>
+            <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid md:grid-cols-2 gap-8">
+              {/* Personal Details */}
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#D6C7B1]/30">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[#2D2D2D]">
+                  <User size={22} className="text-[#8BA889]" /> Personal Details
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    { icon: Mail, label: 'Email', value: user.email },
+                    { icon: Phone, label: 'Phone', value: user.phone || 'Not set' },
+                    { icon: MapPin, label: 'Location', value: user.location || 'Not set' },
+                    { icon: Globe, label: 'Provider', value: user.provider === 'google' ? 'Google Account' : 'Email & Password' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4 p-4 bg-gradient-to-r from-[#8BA889]/10 to-transparent rounded-2xl">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <item.icon className="text-[#8BA889]" size={18} />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-xs font-semibold text-[#2D2D2D]/50 uppercase tracking-wider mb-0.5">{item.label}</p>
+                        <p className="font-medium text-[#2D2D2D] truncate">{item.value}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Recent Trips */}
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#D6C7B1]/20">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold flex items-center gap-2"><Heart size={20} className="text-[#8BA889]" /> Recent Adventures</h3>
-                  <button className="text-[#8BA889] text-sm flex items-center gap-1">View All <ChevronRight size={16} /></button>
+              {/* Bio & Travel Style */}
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#D6C7B1]/30">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[#2D2D2D]">
+                  <Edit2 size={22} className="text-[#8BA889]" /> About Me
+                </h3>
+                <div className="p-5 bg-[#8BA889]/5 rounded-2xl mb-6 min-h-[100px]">
+                  <p className="text-[#2D2D2D]/80 leading-relaxed">{user.bio || 'No bio yet. Click "Edit Profile" to add one!'}</p>
                 </div>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {recentTrips.map((trip, idx) => (
-                    <div key={idx} className="group cursor-pointer">
-                      <div className="relative rounded-xl overflow-hidden h-48 mb-3">
-                        <img src={trip.image} alt={trip.destination} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                        <div className="absolute bottom-3 left-3 text-white">
-                          <p className="font-semibold">{trip.destination}</p>
-                          <p className="text-xs opacity-90">{trip.date}</p>
+
+                {user.travelStyle && user.travelStyle.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-semibold text-[#2D2D2D]/70 uppercase tracking-wider mb-3">Travel Style</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {user.travelStyle.map((s, i) => (
+                        <span key={i} className="px-4 py-1.5 bg-white border border-[#8BA889]/30 rounded-full text-sm font-medium text-[#4A5D4B] shadow-sm">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {user.languages && user.languages.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-[#2D2D2D]/70 uppercase tracking-wider mb-3">Languages</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {user.languages.map((l, i) => (
+                        <span key={i} className="px-4 py-1.5 bg-white border border-[#D6C7B1]/30 rounded-full text-sm font-medium text-[#2D2D2D]/70 shadow-sm">{l}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button onClick={openEditModal} className="mt-6 w-full py-3 border-2 border-dashed border-[#8BA889]/40 text-[#4A5D4B] rounded-xl font-medium hover:bg-[#8BA889]/5 transition-all flex items-center justify-center gap-2">
+                  <Edit2 size={16} /> Edit Profile
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'settings' && (
+            <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="max-w-3xl mx-auto space-y-8">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#D6C7B1]/30">
+                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3 text-[#2D2D2D]">
+                  <Settings size={24} className="text-[#8BA889]" /> Account Settings
+                </h3>
+                <div className="space-y-3">
+                  {settingsItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-white border border-gray-100 hover:border-[#8BA889]/30 hover:shadow-md rounded-2xl cursor-pointer transition-all group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[#8BA889]/10 group-hover:bg-[#8BA889]/20 rounded-xl flex items-center justify-center transition-colors">
+                          <item.icon size={22} className="text-[#4A5D4B]" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-[#2D2D2D] text-lg">{item.label}</p>
+                          <p className="text-sm text-[#2D2D2D]/60">{item.desc}</p>
                         </div>
                       </div>
-                      <div className="flex gap-1">{[...Array(trip.rating)].map((_, i) => (<Star key={i} size={16} className="fill-yellow-400 text-yellow-400" />))}</div>
+                      <ChevronRight size={20} className="text-[#2D2D2D]/40 group-hover:text-[#4A5D4B]" />
                     </div>
                   ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Achievements Tab */}
-          {activeTab === 'achievements' && (
-            <motion.div key="achievements" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#D6C7B1]/20">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Award size={20} className="text-[#8BA889]" /> Travel Achievements</h3>
-                <div className="space-y-6">
-                  {achievements.map((item, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between mb-2">
-                        <div className="flex items-center gap-2"><item.icon size={20} className="text-[#8BA889]" /><span className="font-medium">{item.title}</span></div>
-                        <span className="text-sm text-[#2D2D2D]/60">{item.progress}%</span>
+                  <div onClick={handleLogout} className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 hover:border-red-200 hover:shadow-md rounded-2xl cursor-pointer transition-all group mt-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-red-100 group-hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors">
+                        <LogOut size={22} className="text-red-600" />
                       </div>
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] rounded-full transition-all duration-1000" style={{ width: `${item.progress}%` }} />
+                      <div>
+                        <p className="font-bold text-red-600 text-lg">Sign Out</p>
+                        <p className="text-sm text-red-600/70">Log out of your account</p>
                       </div>
-                      <p className="text-xs text-[#2D2D2D]/60 mt-1">{item.description}</p>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#D6C7B1]/20">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Sparkles size={20} className="text-[#8BA889]" /> Travel Badges</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {badges.map((badge, idx) => (
-                    <div key={idx} className="text-center p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl">
-                      <div className={`w-12 h-12 bg-gradient-to-br ${badge.color} rounded-full flex items-center justify-center mx-auto mb-2`}>
-                        <badge.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <p className="text-sm font-medium">{badge.name}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Settings Tab */}
-          {activeTab === 'settings' && (
-            <motion.div key="settings" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#D6C7B1]/20">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Settings size={20} className="text-[#8BA889]" /> Account Settings</h3>
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-[#D6C7B1]/30">
+                <h3 className="text-2xl font-bold mb-6 flex items-center gap-3 text-[#2D2D2D]">
+                  <Share2 size={24} className="text-[#8BA889]" /> Connected Accounts
+                </h3>
                 <div className="space-y-4">
-                  {settingsItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#8BA889]/10 rounded-xl flex items-center justify-center"><item.icon size={20} className="text-[#8BA889]" /></div>
-                        <div><p className="font-medium">{item.label}</p><p className="text-sm text-[#2D2D2D]/60">{item.desc}</p></div>
+                  {['Google'].map((social, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center font-bold text-xl text-[#2D2D2D]">{social[0]}</div>
+                        <div>
+                          <span className="font-bold text-[#2D2D2D] block">{social}</span>
+                          <span className="text-sm text-gray-500">{social === 'Google' && user.provider === 'google' ? 'Connected' : 'Not connected'}</span>
+                        </div>
                       </div>
-                      <ChevronRight size={20} className="text-[#2D2D2D]/40" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#D6C7B1]/20">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Share2 size={20} className="text-[#8BA889]" /> Connected Accounts</h3>
-                <div className="space-y-3">
-                  {['Instagram', 'Twitter', 'Facebook'].map((social, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                      <div className="flex items-center gap-3"><div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">{social[0]}</div><span className="font-medium">{social}</span></div>
-                      <button className="px-4 py-2 text-sm bg-[#8BA889]/10 text-[#4A5D4B] rounded-lg hover:bg-[#8BA889]/20">Connect</button>
+                      <button className="px-5 py-2 text-sm font-bold bg-gray-50 text-[#2D2D2D] rounded-xl hover:bg-gray-100 transition-colors">
+                        {social === 'Google' && user.provider === 'google' ? 'Connected' : 'Connect'}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -265,23 +302,75 @@ const ProfilePage: React.FC = () => {
       <AnimatePresence>
         {isEditing && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsEditing(false)}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-              className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-gray-200"><h2 className="text-2xl font-bold">Edit Profile</h2></div>
-              <div className="p-6 space-y-4">
-                {['Name', 'Email', 'Phone'].map((field, idx) => (
-                  <div key={idx}>
-                    <label className="block text-sm font-medium mb-2">{field}</label>
-                    <input type={field === 'Email' ? 'email' : 'text'} defaultValue={profileData[field.toLowerCase() as keyof typeof profileData] as string} 
-                      className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#8BA889] focus:outline-none" />
-                  </div>
-                ))}
-                <div><label className="block text-sm font-medium mb-2">Bio</label><textarea rows={4} defaultValue={profileData.bio} className="w-full p-3 border border-gray-200 rounded-xl focus:border-[#8BA889] focus:outline-none" /></div>
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsEditing(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="p-8 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10 rounded-t-3xl">
+                <h2 className="text-3xl font-bold text-[#2D2D2D]">Edit Profile</h2>
+                <button onClick={() => setIsEditing(false)} className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                  <X size={20} className="text-gray-500" />
+                </button>
               </div>
-              <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
-                <button onClick={() => setIsEditing(false)} className="px-6 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">Cancel</button>
-                <button onClick={() => setIsEditing(false)} className="px-6 py-2 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white rounded-xl hover:shadow-lg">Save Changes</button>
+
+              <div className="p-8 space-y-6">
+                {/* Avatar Upload */}
+                <div className="flex items-center gap-6 mb-4">
+                  <div onClick={() => fileInputRef.current?.click()}
+                    className="w-24 h-24 rounded-full bg-gradient-to-br from-[#4A5D4B] to-[#8BA889] flex items-center justify-center text-white overflow-hidden shadow-lg relative group cursor-pointer flex-shrink-0">
+                    {(avatarPreview || user?.avatar) ? (
+                      <img src={avatarPreview || user?.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={40} />
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera size={24} />
+                    </div>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                  <div>
+                    <h3 className="font-bold text-lg text-[#2D2D2D]">Profile Picture</h3>
+                    <p className="text-sm text-gray-500 mb-3">Click the photo to change. Max 800KB.</p>
+                    <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Upload New</button>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-[#2D2D2D] mb-2">Full Name</label>
+                    <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#8BA889] focus:ring-2 focus:ring-[#8BA889]/20 focus:bg-white transition-all outline-none font-medium" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[#2D2D2D] mb-2">Email Address</label>
+                    <input type="email" value={user?.email || ''} readOnly
+                      className="w-full p-4 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 outline-none font-medium cursor-not-allowed" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[#2D2D2D] mb-2">Phone Number</label>
+                    <input type="text" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+91 98765 43210"
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#8BA889] focus:ring-2 focus:ring-[#8BA889]/20 focus:bg-white transition-all outline-none font-medium" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[#2D2D2D] mb-2">Location</label>
+                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="City, Country"
+                      className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#8BA889] focus:ring-2 focus:ring-[#8BA889]/20 focus:bg-white transition-all outline-none font-medium" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[#2D2D2D] mb-2">Short Bio</label>
+                  <textarea rows={4} value={formData.bio} onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Tell us about yourself..."
+                    className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#8BA889] focus:ring-2 focus:ring-[#8BA889]/20 focus:bg-white transition-all outline-none font-medium resize-none" />
+                </div>
+                {saveError && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">{saveError}</div>}
+              </div>
+              <div className="p-8 border-t border-gray-100 bg-gray-50 rounded-b-3xl flex gap-4 justify-end">
+                <button onClick={() => setIsEditing(false)} disabled={isSaving} className="px-8 py-3.5 bg-white border border-gray-200 text-[#2D2D2D] font-bold rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50">Cancel</button>
+                <button onClick={handleSave} disabled={isSaving} className="px-8 py-3.5 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 flex items-center gap-2">
+                  {isSaving ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>) : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
