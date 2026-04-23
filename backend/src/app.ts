@@ -9,6 +9,7 @@ import tripRoutes from './api/routes/trip.routes.js';
 import itineraryRoutes from './api/routes/itinerary.routes.js';
 import userRoutes from './api/routes/user.routes.js';
 import chatRoutes from './api/routes/chat.routes.js'
+import recommendationRoutes from './api/routes/recommendation.routes.js'
 
 const app = express();
 
@@ -17,7 +18,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
@@ -44,6 +45,7 @@ app.use('/api/v1/trips', tripRoutes);
 app.use('/api/v1/itineraries', itineraryRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/recommendations', recommendationRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
