@@ -9,6 +9,7 @@ import ProfilePage from './pages/Profile/ProfilePage'
 import LoginPage from './pages/Register/LoginPage'
 import SignupPage from './pages/Register/SignupPage'
 import AuthSuccess from './pages/Register/AuthSuccess'
+import ChatBot from './pages/test/ChatBot'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/success" element={<AuthSuccess />} />
+          <Route path="/test/chat" element={<ChatBot />} />
 
         </Routes>
       </div>
