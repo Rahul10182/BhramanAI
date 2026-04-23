@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, Sparkles, Compass, ArrowRight, AlertCircle,
@@ -15,6 +16,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   setActiveDay, pollMessage, chatContainerRef, inputRef, handleSubmit, 
   handleKeyDown, sendMessage, extractedData, tripId
 }) => {
+  const navigate = useNavigate();
   
   const formatItineraryDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -193,6 +195,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                         </div>
                       ))}
                   </div>
+
+                  {/* View Full Trip CTA */}
+                  {tripId && (
+                    <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                      <button
+                        onClick={() => navigate(`/trip/${tripId}`)}
+                        className="w-full py-3 bg-gradient-to-r from-blue-500 to-violet-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                      >
+                        View Your Trip →
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </>

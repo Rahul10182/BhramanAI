@@ -13,17 +13,25 @@ export class ItineraryService {
             const dayDate = new Date(baseDate);
             dayDate.setDate(dayDate.getDate() + (dayData.dayNumber - 1));
 
+            const activities = dayData.activities.map((act: any) => ({
+                time: act.time,
+                title: act.title,
+                description: act.description,
+                location: act.location || "Location not specified",
+                category: act.category || "other",
+                estimatedCost: act.estimatedCost || act.estimated_cost || 0,
+                aiGenerated: true
+            }));
+
+            const dailyBudget = activities.reduce((sum: number, a: any) => sum + (a.estimatedCost || 0), 0);
+
             return {
                 tripId: new mongoose.Types.ObjectId(tripId),
                 dayNumber: dayData.dayNumber,
                 date: dayDate,
-                activities: dayData.activities.map((act: any) => ({
-                    time: act.time,
-                    title: act.title,
-                    description: act.description,
-                    location: act.location || "Location not specified",
-                    aiGenerated: true
-                }))
+                activities,
+                weather: dayData.weather || null,
+                dailyBudget
             };
         });
 

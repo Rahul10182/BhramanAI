@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, 
-  MapPin, 
   Clock, 
   Users, 
-  MoreVertical, 
-  Plane,
-  Hotel,
-  Coffee,
-  Camera,
   Star,
   Heart,
   Share2,
@@ -18,76 +13,40 @@ import {
   AlertCircle,
   TrendingUp,
   Award,
-  Compass
+  Compass,
+  Loader2,
+  MapPin,
+  Camera
 } from 'lucide-react';
+import { tripApi } from '../../apis/tripApi';
+import type { TripDetail } from '../../apis/tripApi';
+import { authApi } from '../../apis/authApi';
 
 const TripPage: React.FC = () => {
-  const [selectedTrip, setSelectedTrip] = useState<number | null>(null);
+  const navigate = useNavigate();
+  const [selectedTrip, setSelectedTrip] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [trips, setTrips] = useState<TripDetail[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const trips = [
-    {
-      id: 1,
-      destination: "Bali, Indonesia",
-      dates: "May 15 - May 22, 2024",
-      days: 7,
-      image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800",
-      status: "Upcoming",
-      companions: 2,
-      rating: 4.9,
-      budget: "$1,200",
-      activities: 12,
-      highlights: ["Ubud Monkey Forest", "Tanah Lot Temple", "Rice Terraces"],
-      weather: "Sunny, 28°C",
-      booked: ["Flight", "Hotel", "Tours"]
-    },
-    {
-      id: 2,
-      destination: "Paris, France",
-      dates: "June 10 - June 18, 2024",
-      days: 8,
-      image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
-      status: "Planning",
-      companions: 1,
-      rating: 4.8,
-      budget: "$2,500",
-      activities: 15,
-      highlights: ["Eiffel Tower", "Louvre Museum", "Seine Cruise"],
-      weather: "Mild, 22°C",
-      booked: ["Flight", "Hotel"]
-    },
-    {
-      id: 3,
-      destination: "Tokyo, Japan",
-      dates: "July 5 - July 15, 2024",
-      days: 10,
-      image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800",
-      status: "Upcoming",
-      companions: 3,
-      rating: 4.9,
-      budget: "$3,200",
-      activities: 20,
-      highlights: ["Shibuya Crossing", "Mount Fuji", "Senso-ji Temple"],
-      weather: "Warm, 30°C",
-      booked: ["Flight", "Hotel", "Train Pass", "Tours"]
-    },
-    {
-      id: 4,
-      destination: "Switzerland",
-      dates: "August 20 - August 28, 2024",
-      days: 8,
-      image: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=800",
-      status: "Completed",
-      companions: 2,
-      rating: 5.0,
-      budget: "$3,500",
-      activities: 14,
-      highlights: ["Jungfraujoch", "Lake Geneva", "Interlaken"],
-      weather: "Cool, 18°C",
-      booked: ["Flight", "Hotel", "Train Pass"]
-    }
-  ];
-
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const user = authApi.getStoredUser();
+        if (user) {
+          const fetchedTrips = await tripApi.getUserTrips(user.id);
+          setTrips(fetchedTrips);
+        } else {
+          navigate('/login', { replace: true, state: { returnUrl: '/trips' } });
+        }
+      } catch (error) {
+        console.error("Failed to fetch trips", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTrips();
+  }, [navigate]);
   const getStatusColor = (status: string) => {
     switch(status) {
       case 'Upcoming': return 'bg-emerald-500';
@@ -142,7 +101,10 @@ const TripPage: React.FC = () => {
             </div>
             
             <div className="flex gap-3">
-              <button className="px-6 py-3 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+              <button 
+                onClick={() => navigate('/chat')}
+                className="px-6 py-3 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+              >
                 <TrendingUp className="w-4 h-4" />
                 Plan New Trip
               </button>
@@ -205,26 +167,39 @@ const TripPage: React.FC = () => {
             : "space-y-4"
           }
         >
-          {trips.map((trip) => (
-            <motion.div
-              key={trip.id}
-              variants={itemVariants}
-              whileHover={{ y: -8 }}
-              className="group cursor-pointer"
-              onClick={() => setSelectedTrip(selectedTrip === trip.id ? null : trip.id)}
-            >
+          {isLoading ? (
+            <div className="col-span-full flex justify-center py-20">
+              <Loader2 className="w-10 h-10 text-[#8BA889] animate-spin" />
+            </div>
+          ) : trips.map((trip) => {
+            const tripId = trip._id;
+            const days = Math.round((new Date(trip.endDate).getTime() - new Date(trip.start_date).getTime()) / (1000 * 3600 * 24)) || 1;
+            const startDateFormatted = new Date(trip.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            // Dummy image based on destination string
+            const imageQuery = encodeURIComponent(trip.destination.split(',')[0]);
+            const image = `https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80&query=${imageQuery}`;
+
+            return (
+              <motion.div
+                key={tripId}
+                variants={itemVariants}
+                whileHover={{ y: -8 }}
+                className="group cursor-pointer"
+                onClick={() => setSelectedTrip(selectedTrip === tripId ? null : tripId)}
+              >
               <div className={`bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-[#D6C7B1]/20 ${
                 viewMode === 'list' ? 'flex' : ''
               }`}>
                 {/* Image */}
                 <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'h-56'}`}>
                   <img 
-                    src={trip.image} 
+                    src={image} 
                     alt={trip.destination} 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-80"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white ${getStatusColor(trip.status)}`}>
+                  <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white ${getStatusColor(trip.status === 'completed' ? 'Completed' : trip.status === 'planning' ? 'Planning' : 'Upcoming')}`}>
                     {trip.status}
                   </div>
                   <button className="absolute top-4 left-4 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all">
@@ -240,49 +215,51 @@ const TripPage: React.FC = () => {
                         <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">{trip.destination}</h3>
                         <div className="flex items-center gap-2 text-sm text-[#2D2D2D]/60">
                           <Calendar className="w-4 h-4" />
-                          <span>{trip.dates}</span>
+                          <span>{startDateFormatted}</span>
                           <span>•</span>
                           <Clock className="w-4 h-4" />
-                          <span>{trip.days} days</span>
+                          <span>{days} days</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-semibold">{trip.rating}</span>
+                        <span className="text-sm font-semibold">4.8</span>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {trip.highlights.slice(0, 3).map((highlight, idx) => (
-                        <span key={idx} className="text-xs px-2 py-1 bg-[#8BA889]/10 rounded-full text-[#4A5D4B]">
-                          {highlight}
+                        <span className="text-xs px-2 py-1 bg-[#8BA889]/10 rounded-full text-[#4A5D4B] capitalize">
+                          {trip.travelStyle} Style
                         </span>
-                      ))}
+                        {trip.source && (
+                          <span className="text-xs px-2 py-1 bg-[#8BA889]/10 rounded-full text-[#4A5D4B]">
+                            From {trip.source}
+                          </span>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="flex items-center gap-2 text-sm">
                         <Users className="w-4 h-4 text-[#8BA889]" />
-                        <span>{trip.companions} Travelers</span>
+                        <span>{trip.travelers} Travelers</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Award className="w-4 h-4 text-[#8BA889]" />
-                        <span>{trip.budget} Budget</span>
+                        <span>₹{trip.budget.toLocaleString()} Budget</span>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                          {['✈️', '🏨', '🎫'].slice(0, trip.booked.length).map((icon, idx) => (
-                            <div key={idx} className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-xs shadow-sm">
-                              {icon}
-                            </div>
-                          ))}
-                        </div>
-                        <span className="text-xs text-[#2D2D2D]/60">{trip.booked.length} bookings</span>
+                        <span className="text-xs text-[#2D2D2D]/60 capitalize text-emerald-600 font-medium">Status: {trip.status}</span>
                       </div>
-                      <button className="text-[#8BA889] hover:text-[#4A5D4B] transition-colors flex items-center gap-1 text-sm font-medium">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/trip/${tripId}`);
+                        }}
+                        className="text-[#8BA889] hover:text-[#4A5D4B] transition-colors flex items-center gap-1 text-sm font-medium"
+                      >
                         View Details
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -293,7 +270,7 @@ const TripPage: React.FC = () => {
 
               {/* Expanded Details */}
               <AnimatePresence>
-                {selectedTrip === trip.id && (
+                {selectedTrip === tripId && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -307,20 +284,26 @@ const TripPage: React.FC = () => {
                           Itinerary Highlights
                         </h4>
                         <ul className="space-y-2">
-                          {trip.highlights.map((highlight, idx) => (
-                            <li key={idx} className="flex items-center gap-2 text-sm">
-                              <div className="w-1.5 h-1.5 bg-[#8BA889] rounded-full" />
-                              {highlight}
-                            </li>
-                          ))}
+                          <li className="flex items-center gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 bg-[#8BA889] rounded-full" />
+                            Explore {trip.destination}
+                          </li>
+                          <li className="flex items-center gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 bg-[#8BA889] rounded-full" />
+                            {trip.travelStyle} experience
+                          </li>
+                          <li className="flex items-center gap-2 text-sm">
+                            <div className="w-1.5 h-1.5 bg-[#8BA889] rounded-full" />
+                            Custom AI planned itinerary
+                          </li>
                         </ul>
                       </div>
                       <div>
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-[#8BA889]" />
-                          Weather Forecast
+                          Trip Status
                         </h4>
-                        <p className="text-sm text-[#2D2D2D]/70">{trip.weather}</p>
+                        <p className="text-sm text-[#2D2D2D]/70 capitalize">{trip.status} trip to {trip.destination}</p>
                         <div className="mt-4 flex gap-2">
                           <button className="flex-1 px-4 py-2 bg-[#8BA889] text-white rounded-lg text-sm font-medium hover:bg-[#4A5D4B] transition-all">
                             Share Itinerary
@@ -335,7 +318,8 @@ const TripPage: React.FC = () => {
                 )}
               </AnimatePresence>
             </motion.div>
-          ))}
+            );
+          })}
         </motion.div>
 
         {/* Empty State */}
@@ -350,7 +334,7 @@ const TripPage: React.FC = () => {
             </div>
             <h3 className="text-2xl font-serif mb-2">No trips yet</h3>
             <p className="text-[#2D2D2D]/60 mb-6">Start planning your first adventure with BhramanAI</p>
-            <button className="btn-primary mx-auto">
+            <button onClick={() => navigate('/chat')} className="btn-primary mx-auto">
               Plan Your First Trip
             </button>
           </motion.div>

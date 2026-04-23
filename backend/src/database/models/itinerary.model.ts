@@ -1,17 +1,30 @@
 // src/database/models/itinerary.model.ts
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IActivity {
+  time: string;
+  title: string;
+  description: string;
+  location: string;
+  category: string;
+  estimatedCost: number;
+  aiGenerated: boolean;
+}
+
+export interface IWeather {
+  condition: string;
+  tempHigh: number;
+  tempLow: number;
+  icon: string;
+}
+
 export interface IItinerary extends Document {
   tripId: mongoose.Types.ObjectId;
   dayNumber: number;
   date: Date;
-  activities: {
-    time: string;
-    title: string;
-    description: string;
-    location: string;
-    aiGenerated: boolean;
-  }[];
+  activities: IActivity[];
+  weather?: IWeather;
+  dailyBudget: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,13 +36,25 @@ const ItinerarySchema: Schema = new Schema(
     date: { type: Date, required: true },
     activities: [
       {
-        time: { type: String, required: true }, // e.g., "10:00 AM"
-        title: { type: String, required: true }, // e.g., "Louvre Museum Tour"
-        description: { type: String }, // AI's detailed explanation of why to go here
+        time: { type: String, required: true },
+        title: { type: String, required: true },
+        description: { type: String },
         location: { type: String },
-        aiGenerated: { type: Boolean, default: true } // Useful to track if the user manually edited an AI suggestion
+        category: { type: String, default: 'other' },
+        estimatedCost: { type: Number, default: 0 },
+        aiGenerated: { type: Boolean, default: true }
       }
-    ]
+    ],
+    weather: {
+      type: {
+        condition: { type: String },
+        tempHigh: { type: Number },
+        tempLow: { type: Number },
+        icon: { type: String }
+      },
+      required: false
+    },
+    dailyBudget: { type: Number, default: 0 }
   },
   { 
     timestamps: true 

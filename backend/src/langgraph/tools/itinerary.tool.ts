@@ -20,6 +20,12 @@ export const saveItineraryTool = new DynamicStructuredTool({
     days: z.array(
       z.object({
         dayNumber: z.number().describe("Day 1, Day 2, etc."),
+        weather: z.object({
+          condition: z.string().describe("e.g. 'Sunny', 'Rainy', 'Cloudy'"),
+          tempHigh: z.number().describe("High temperature in Celsius"),
+          tempLow: z.number().describe("Low temperature in Celsius"),
+          icon: z.string().optional()
+        }).optional().describe("Weather forecast for this day"),
         activities: z.array(
           z.object({
             time: z
@@ -42,6 +48,7 @@ export const saveItineraryTool = new DynamicStructuredTool({
               .string()
               .describe("Engaging description, including vibe or tips"),
             location: z.string().optional(),
+            estimatedCost: z.number().optional().describe("Estimated cost in INR or local currency. Example: 1500"),
           }),
         ),
       }),

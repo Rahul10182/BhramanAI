@@ -274,7 +274,7 @@ class AuthApi {
   // Get recommendations for a trip
   async getRecommendations(tripId: string): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const response = await fetch(`${API_URL}/v1/recommendations/${tripId}`, {
+      const response = await fetch(`${API_URL}/v1/recommendations/public/${tripId}`, {
         method: 'GET',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
