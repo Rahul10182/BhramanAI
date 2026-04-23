@@ -11,10 +11,11 @@ import SignupPage from './pages/Register/SignupPage'
 import AuthSuccess from './pages/Register/AuthSuccess'
 import ChatBot from './pages/test/ChatBot'
 import RecommendationPage from './pages/Recommendations/RecommendationPage'
+import TripDetailPage from './pages/Trip/TripDetailPage'
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = location.pathname.startsWith('/chat');
+  const hideNavbar = location.pathname.startsWith('/chat') || location.pathname.startsWith('/trip/');
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
@@ -31,6 +32,7 @@ function AppContent() {
         <Route path="/chat" element={<ChatBot />} />
         <Route path="/chat/:chatId" element={<ChatBot />} />
         <Route path="/recommendations/:tripId" element={<RecommendationPage />} />
+        <Route path="/trip/:tripId" element={<TripDetailPage />} />
       </Routes>
     </div>
   );

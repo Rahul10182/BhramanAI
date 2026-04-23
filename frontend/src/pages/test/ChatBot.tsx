@@ -4,8 +4,8 @@ import ChatSidebar from '../../components/chat/ChatSidebar';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { chatApi, type TripContext, type ItineraryDay } from '../../apis/chatApi';
 import type { ChatMessage } from '../../types/chat.types';
+import { authApi } from '../../apis/authApi';
 
-const MOCK_USER_ID = '507f1f77bcf86cd799439011';
 const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_ATTEMPTS = 60; // 5 min max
 
@@ -30,6 +30,17 @@ const ChatBot: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null!);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
+
+  // Authentication check
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = authApi.getStoredUser();
+      if (!user) {
+        navigate('/login', { replace: true, state: { returnUrl: `/chat/${chatId || ''}` } });
+      }
+    };
+    checkAuth();
+  }, [navigate, chatId]);
 
   // Auto-scroll to latest message
   const scrollToBottom = useCallback(() => {
@@ -169,9 +180,15 @@ const ChatBot: React.FC = () => {
     setIsLoading(true);
 
     try {
+      const user = authApi.getStoredUser();
+      if (!user) {
+        navigate('/login', { replace: true });
+        return;
+      }
+
       const data = await chatApi.sendMessage(
         chatId,
-        MOCK_USER_ID,
+        user.id,
         buildMessagesPayload(updatedMessages)
       );
 
