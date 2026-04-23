@@ -6,6 +6,7 @@ import { TripService } from '../../services/trip.service.js';
 
 export const handleChat = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { chatId } = req.params;
     const { userId, messages } = req.body; 
 
     // 1. Format messages for LangChain
@@ -39,6 +40,7 @@ export const handleChat = async (req: Request, res: Response): Promise<void> => 
     // We use fallback dates/styles just in case the AI misses something
     const trip = new TripModel({
       userId, 
+      chatId,
       source: tripData.source || "Unknown",
       destination: finalDestination, // Pass the safe string to Mongoose
       start_date: new Date(tripData.start_date || Date.now()),
