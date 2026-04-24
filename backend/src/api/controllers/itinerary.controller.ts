@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { ItineraryModel } from '../../database/models/itinerary.model.js';
+import { TripModel } from '../../database/models/trip.model.js';
+import { RecommendationService } from '../../services/recommendation.service.js';
 
 /**
  * 1. CREATE: Manually add a new day to an itinerary.
@@ -91,5 +93,107 @@ export const deleteItineraryDay = async (req: Request, res: Response): Promise<v
   } catch (error) {
     console.error("Error deleting itinerary:", error);
     res.status(500).json({ error: 'Failed to delete itinerary day' });
+  }
+};
+
+/**
+ * 5. REPLACE ACTIVITY: Swap a single activity at a given index within a day.
+ * Human-in-the-loop: user picks an alternative, frontend sends the new activity data.
+ * PUT /api/v1/itineraries/:dayId/activities/:activityIndex
+ */
+export const replaceActivity = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { dayId, activityIndex } = req.params;
+    const newActivity = req.body;
+    const idx = parseInt(activityIndex, 10);
+
+    const day = await ItineraryModel.findById(dayId);
+    if (!day) {
+      res.status(404).json({ error: 'Itinerary day not found' });
+      return;
+    }
+
+    if (idx < 0 || idx >= day.activities.length) {
+      res.status(400).json({ error: 'Invalid activity index' });
+      return;
+    }
+
+    // Replace the activity at the given index
+    day.activities[idx] = {
+      time: newActivity.time || day.activities[idx].time,
+      title: newActivity.title,
+      description: newActivity.description || '',
+      location: newActivity.location || '',
+      category: newActivity.category || day.activities[idx].category,
+      estimatedCost: newActivity.estimatedCost || 0,
+      aiGenerated: false // User-selected, not AI-generated
+    };
+
+    // Recalculate daily budget
+    day.dailyBudget = day.activities.reduce((sum, a) => sum + (a.estimatedCost || 0), 0);
+
+    await day.save();
+
+    res.status(200).json(day);
+  } catch (error) {
+    console.error("Error replacing activity:", error);
+    res.status(500).json({ error: 'Failed to replace activity' });
+  }
+};
+
+/**
+ * 6. GET ALTERNATIVES: Fetch alternative activities for a specific slot.
+ * Uses the RecommendationService to get activities matching the trip's destination.
+ * GET /api/v1/itineraries/:dayId/alternatives/:activityIndex
+ */
+export const getAlternativeActivities = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { dayId, activityIndex } = req.params;
+    const idx = parseInt(activityIndex, 10);
+
+    const day = await ItineraryModel.findById(dayId);
+    if (!day) {
+      res.status(404).json({ error: 'Itinerary day not found' });
+      return;
+    }
+
+    if (idx < 0 || idx >= day.activities.length) {
+      res.status(400).json({ error: 'Invalid activity index' });
+      return;
+    }
+
+    const currentActivity = day.activities[idx];
+
+    // Get the trip to know the destination
+    const trip = await TripModel.findById(day.tripId);
+    if (!trip) {
+      res.status(404).json({ error: 'Associated trip not found' });
+      return;
+    }
+
+    // Use the recommendation service to fetch alternatives
+    const data = await RecommendationService.getRecommendations(trip._id.toString());
+
+    // Filter activities to those matching or related to the current activity's category
+    const alternatives = (data.activities || []).map((a: any) => ({
+      ...a,
+      // Map recommendation fields to activity schema
+      title: a.name,
+      description: a.description,
+      location: trip.destination,
+      category: currentActivity.category,
+      estimatedCost: a.price || 0,
+      time: currentActivity.time // Keep the same time slot
+    }));
+
+    res.status(200).json({
+      currentActivity,
+      alternatives,
+      dayId,
+      activityIndex: idx
+    });
+  } catch (error) {
+    console.error("Error fetching alternatives:", error);
+    res.status(500).json({ error: 'Failed to fetch alternative activities' });
   }
 };

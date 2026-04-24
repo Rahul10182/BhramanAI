@@ -7,7 +7,7 @@ const ExtractionSchema = z.object({
     destination: z.string().nullable().describe("Destination city. Return null if unknown."),
     start_date: z.string().nullable().describe("Start date (YYYY-MM-DD). Return null if unknown."),
     endDate: z.string().nullable().describe("End date (YYYY-MM-DD). Return null if unknown."),
-    travelers: z.number().nullable().describe("Number of travelers. Return null if unknown."),
+    travelerCount: z.number().nullable().describe("Number of travelers. Return null if unknown."),
     totalBudget: z.number().nullable().describe("Total budget. Return null if unknown."),
     travelStyle: z.string().nullable().describe("Travel style preference. Return null if unknown."),
   }),
