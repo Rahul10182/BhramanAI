@@ -272,7 +272,7 @@ class AuthApi {
   }
 
   // Get recommendations for a trip
-  async getRecommendations(tripId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+  async getRecommendations(tripId: string): Promise<{ success: boolean; data?: any; error?: string; status?: number }> {
     try {
       const response = await fetch(`${API_URL}/v1/recommendations/${tripId}`, {
         method: 'GET',
@@ -280,16 +280,22 @@ class AuthApi {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      const result = await response.json();
+      // Handle non-JSON error responses gracefully
+      let result;
+      try {
+        result = await response.json();
+      } catch {
+        return { success: false, error: 'Invalid server response', status: response.status };
+      }
 
       if (response.ok && result.success) {
         return { success: true, data: result };
       } else {
-        return { success: false, error: result.error || 'Failed to fetch recommendations' };
+        return { success: false, error: result.error || result.message || 'Failed to fetch recommendations', status: response.status };
       }
     } catch (error) {
       console.error('Recommendations error:', error);
-      return { success: false, error: 'Network error' };
+      return { success: false, error: 'Network error — please check your connection', status: 0 };
     }
   }
 }

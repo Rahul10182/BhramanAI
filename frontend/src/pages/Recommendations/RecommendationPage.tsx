@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Hotel, MapPin, Star, Clock, Tag, CheckCircle2,
   RefreshCw, ArrowLeft, Wallet, Users, Calendar,
-  Sparkles, AlertCircle, Building2, Compass
+  Sparkles, AlertCircle, Building2, Compass,
+  ShieldX, MapPinOff, WifiOff, ServerCrash, LogIn, Home
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { authApi } from '../../apis/authApi';
@@ -21,6 +22,144 @@ interface TripInfo {
   budget: number; travelers: number; travelStyle: string;
 }
 
+type ErrorType = 'unauthorized' | 'not_found' | 'network' | 'server' | 'generic';
+
+const getErrorType = (status?: number, errorMsg?: string): ErrorType => {
+  if (status === 401 || status === 403) return 'unauthorized';
+  if (status === 404) return 'not_found';
+  if (status === 0 || errorMsg?.toLowerCase().includes('network')) return 'network';
+  if (status && status >= 500) return 'server';
+  return 'generic';
+};
+
+// ── Error Screen Component ──
+const ErrorScreen: React.FC<{
+  errorType: ErrorType; errorMsg: string;
+  onRetry: () => void; navigate: ReturnType<typeof useNavigate>;
+}> = ({ errorType, errorMsg, onRetry, navigate }) => {
+  const configs: Record<ErrorType, {
+    icon: React.ElementType; title: string; desc: string;
+    gradient: string; iconColor: string; bgColor: string; borderColor: string;
+    primaryAction: { label: string; icon: React.ElementType; onClick: () => void };
+    secondaryAction?: { label: string; icon: React.ElementType; onClick: () => void };
+  }> = {
+    unauthorized: {
+      icon: ShieldX, title: 'Authentication Required',
+      desc: 'You need to sign in to view trip recommendations. Your session may have expired.',
+      gradient: 'from-amber-500 to-orange-500', iconColor: 'text-amber-500',
+      bgColor: 'bg-amber-50', borderColor: 'border-amber-100',
+      primaryAction: { label: 'Sign In', icon: LogIn, onClick: () => navigate('/login', { state: { from: window.location.pathname } }) },
+      secondaryAction: { label: 'Go Home', icon: Home, onClick: () => navigate('/') },
+    },
+    not_found: {
+      icon: MapPinOff, title: 'Trip Not Found',
+      desc: "This trip doesn't exist or may have been deleted. Double-check the link or browse your trips.",
+      gradient: 'from-rose-500 to-pink-500', iconColor: 'text-rose-500',
+      bgColor: 'bg-rose-50', borderColor: 'border-rose-100',
+      primaryAction: { label: 'My Trips', icon: Compass, onClick: () => navigate('/trips') },
+      secondaryAction: { label: 'Go Back', icon: ArrowLeft, onClick: () => navigate(-1) },
+    },
+    network: {
+      icon: WifiOff, title: 'Connection Lost',
+      desc: "Can't reach the server. Check your internet connection and try again.",
+      gradient: 'from-slate-500 to-gray-600', iconColor: 'text-slate-500',
+      bgColor: 'bg-slate-50', borderColor: 'border-slate-100',
+      primaryAction: { label: 'Retry', icon: RefreshCw, onClick: onRetry },
+      secondaryAction: { label: 'Go Back', icon: ArrowLeft, onClick: () => navigate(-1) },
+    },
+    server: {
+      icon: ServerCrash, title: 'Server Error',
+      desc: 'Something went wrong on our end. Our team has been notified. Please try again shortly.',
+      gradient: 'from-violet-500 to-purple-600', iconColor: 'text-violet-500',
+      bgColor: 'bg-violet-50', borderColor: 'border-violet-100',
+      primaryAction: { label: 'Retry', icon: RefreshCw, onClick: onRetry },
+      secondaryAction: { label: 'Go Back', icon: ArrowLeft, onClick: () => navigate(-1) },
+    },
+    generic: {
+      icon: AlertCircle, title: 'Something Went Wrong',
+      desc: errorMsg || 'An unexpected error occurred. Please try again.',
+      gradient: 'from-red-500 to-rose-500', iconColor: 'text-red-500',
+      bgColor: 'bg-red-50', borderColor: 'border-red-100',
+      primaryAction: { label: 'Retry', icon: RefreshCw, onClick: onRetry },
+      secondaryAction: { label: 'Go Back', icon: ArrowLeft, onClick: () => navigate(-1) },
+    },
+  };
+
+  const config = configs[errorType];
+  const IconComp = config.icon;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#FDFCFB] via-white to-[#D6C7B1]/10 flex items-center justify-center p-4">
+      {/* Background orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[20%] right-[20%] w-[400px] h-[400px] bg-[#8BA889]/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-[20%] left-[15%] w-[350px] h-[350px] bg-[#D6C7B1]/12 rounded-full blur-3xl" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className={`relative bg-white/90 backdrop-blur-xl p-10 rounded-3xl shadow-2xl max-w-md w-full text-center border ${config.borderColor}`}
+      >
+        {/* Decorative top gradient bar */}
+        <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1.5 bg-gradient-to-r ${config.gradient} rounded-b-full`} />
+
+        <motion.div
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+          className={`w-20 h-20 ${config.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-${config.bgColor}/50`}
+        >
+          <IconComp className={`w-10 h-10 ${config.iconColor}`} />
+        </motion.div>
+
+        <h2 className="text-2xl font-bold text-[#2D2D2D] mb-3 tracking-tight">{config.title}</h2>
+        <p className="text-[#2D2D2D]/55 mb-8 leading-relaxed">{config.desc}</p>
+
+        {errorType === 'unauthorized' && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+            className="mb-6 px-4 py-3 bg-amber-50/80 border border-amber-200/50 rounded-xl"
+          >
+            <p className="text-xs text-amber-700/80 flex items-center justify-center gap-1.5">
+              <ShieldX size={12} /> Your data is safe — sign in to continue
+            </p>
+          </motion.div>
+        )}
+
+        {errorType === 'not_found' && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+            className="mb-6 px-4 py-3 bg-rose-50/80 border border-rose-200/50 rounded-xl"
+          >
+            <p className="text-xs text-rose-600/80">Error 404 — The requested trip resource does not exist</p>
+          </motion.div>
+        )}
+
+        <div className="flex gap-3 justify-center">
+          {config.secondaryAction && (
+            <button
+              onClick={config.secondaryAction.onClick}
+              className="group flex items-center gap-2 px-5 py-3 border border-gray-200 rounded-2xl font-semibold text-[#2D2D2D]/80 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300"
+            >
+              <config.secondaryAction.icon size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+              {config.secondaryAction.label}
+            </button>
+          )}
+          <button
+            onClick={config.primaryAction.onClick}
+            className={`group flex items-center gap-2 px-6 py-3 bg-gradient-to-r ${config.gradient} text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300`}
+          >
+            <config.primaryAction.icon size={16} />
+            {config.primaryAction.label}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// ── Main RecommendationPage ──
 const RecommendationPage: React.FC = () => {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
@@ -31,6 +170,7 @@ const RecommendationPage: React.FC = () => {
   const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -38,7 +178,7 @@ const RecommendationPage: React.FC = () => {
   }, [tripId]);
 
   const fetchRecommendations = async () => {
-    setIsLoading(true); setError('');
+    setIsLoading(true); setError(''); setErrorStatus(undefined);
     const result = await authApi.getRecommendations(tripId!);
     if (result.success && result.data) {
       setHotels(result.data.hotels || []);
@@ -50,6 +190,7 @@ const RecommendationPage: React.FC = () => {
       }
     } else {
       setError(result.error || 'Failed to load recommendations');
+      setErrorStatus(result.status);
     }
     setIsLoading(false);
   };
@@ -74,36 +215,25 @@ const RecommendationPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#FDFCFB] via-white to-[#D6C7B1]/10 flex items-center justify-center">
-        <div className="text-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-4 border-[#8BA889]/20" />
             <div className="absolute inset-0 rounded-full border-4 border-t-[#4A5D4B] animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-[#4A5D4B]/50" />
+            </div>
           </div>
           <h2 className="text-2xl font-bold text-[#2D2D2D] mb-2">Finding Best Options</h2>
           <p className="text-[#2D2D2D]/60">Searching hotels & activities for your destination...</p>
-        </div>
+        </motion.div>
       </div>
     );
   }
 
-  // --- Error ---
+  // --- Error (contextual) ---
   if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FDFCFB] via-white to-[#D6C7B1]/10 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border border-red-100">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold text-[#2D2D2D] mb-2">Something Went Wrong</h2>
-          <p className="text-[#2D2D2D]/60 mb-6">{error}</p>
-          <div className="flex gap-3 justify-center">
-            <button onClick={() => navigate(-1)} className="px-6 py-3 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors">Go Back</button>
-            <button onClick={fetchRecommendations} className="px-6 py-3 bg-gradient-to-r from-[#4A5D4B] to-[#8BA889] text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all">Retry</button>
-          </div>
-        </motion.div>
-      </div>
-    );
+    const errorType = getErrorType(errorStatus, error);
+    return <ErrorScreen errorType={errorType} errorMsg={error} onRetry={fetchRecommendations} navigate={navigate} />;
   }
 
   return (

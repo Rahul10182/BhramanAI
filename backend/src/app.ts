@@ -10,6 +10,7 @@ import itineraryRoutes from './api/routes/itinerary.routes.js';
 import userRoutes from './api/routes/user.routes.js';
 import chatRoutes from './api/routes/chat.routes.js'
 import recommendationRoutes from './api/routes/recommendation.routes.js'
+import { notFoundHandler, globalErrorHandler } from './api/middlewares/error.middleware.js';
 
 const app = express();
 
@@ -51,5 +52,9 @@ app.use('/api/v1/recommendations', recommendationRoutes);
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server running' });
 });
+
+// ── Global Error Handling (must be AFTER all routes) ──
+app.use(notFoundHandler);      // Catches unmatched routes → 404
+app.use(globalErrorHandler);   // Catches all thrown errors → proper JSON response
 
 export default app;
