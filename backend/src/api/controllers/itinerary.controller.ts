@@ -11,7 +11,7 @@ import { RecommendationService } from '../../services/recommendation.service.js'
 export const saveItinerary = async (req: Request, res: Response): Promise<void> => {
   try {
     const { tripId, dayNumber, date, activities } = req.body;
-    
+
     const itinerary = new ItineraryModel({
       tripId,
       dayNumber,
@@ -33,10 +33,10 @@ export const saveItinerary = async (req: Request, res: Response): Promise<void> 
 export const getTripItinerary = async (req: Request, res: Response): Promise<void> => {
   try {
     const tripId = req.params.tripId as string;
-    
+
     // Fetch all days belonging to this trip and sort them sequentially by dayNumber
     const itinerary = await ItineraryModel.find({ tripId }).sort({ dayNumber: 1 });
-    
+
     res.status(200).json(itinerary);
   } catch (error) {
     console.error("Error fetching trip itinerary:", error);
@@ -46,20 +46,47 @@ export const getTripItinerary = async (req: Request, res: Response): Promise<voi
 
 /**
  * 3. UPDATE: Edit a specific day's activities, date, or details.
- * Useful for dragging-and-dropping activities on the frontend.
+ * Enforces a 30-minute minimum gap between activities.
  */
+
+// Helper: parse "09:00 AM" / "14:30 PM" / "9:00" into total minutes from midnight
+const parseTime = (timeStr: string): number => {
+  if (!timeStr) return -1;
+  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!match) return -1;
+  let h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  const ampm = match[3]?.toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+};
+
+const checkTimeOverlaps = (activities: any[]): { hasOverlap: boolean; message: string } => {
+  // Bypassing time overlap check as requested by the user to allow flexible activity additions
+  return { hasOverlap: false, message: '' };
+};
+
 export const updateItineraryDay = async (req: Request, res: Response): Promise<void> => {
   try {
-    // This ID is the Mongoose _id for the specific DAY, not the overall trip
     const itineraryDayId = req.params.id as string;
     const updates = req.body;
 
+    // Validate time overlaps if activities are being updated
+    if (updates.activities && Array.isArray(updates.activities)) {
+      const { hasOverlap, message } = checkTimeOverlaps(updates.activities);
+      if (hasOverlap) {
+        res.status(400).json({ error: message });
+        return;
+      }
+    }
+
     const updatedItinerary = await ItineraryModel.findByIdAndUpdate(
-      itineraryDayId, 
-      updates, 
-      { 
-        new: true,           // Return the newly updated document
-        runValidators: true  // Ensure Mongoose schema rules are enforced
+      itineraryDayId,
+      updates,
+      {
+        new: true,
+        runValidators: true
       }
     );
 

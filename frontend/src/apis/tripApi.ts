@@ -103,7 +103,10 @@ export const tripApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
-    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `Server error: ${response.status}`);
+    }
     return response.json();
   },
 
@@ -118,8 +121,46 @@ export const tripApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         activities: updated,
-        dailyBudget: updated.reduce((sum, a) => sum + (a.estimatedCost || 0), 0),
+        dailyBudget: updated.reduce((sum, a) => sum + (Number(a.estimatedCost) || 0), 0),
       }),
+    });
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    return response.json();
+  },
+
+  updateTrip: async (tripId: string, updates: Partial<TripDetail>): Promise<TripDetail> => {
+    const response = await fetch(`${API_BASE}/trips/${tripId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    return response.json();
+  },
+
+  addActivity: async (
+    dayId: string,
+    newActivity: ActivityDetail,
+    currentActivities: ActivityDetail[]
+  ): Promise<ItineraryDayDetail> => {
+    const updated = [...currentActivities, newActivity];
+    const response = await fetch(`${API_BASE}/itineraries/${dayId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        activities: updated,
+        dailyBudget: updated.reduce((sum, a) => sum + (Number(a.estimatedCost) || 0), 0),
+      }),
+    });
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    return response.json();
+  },
+
+  regenerateTrip: async (tripId: string, updates: Partial<TripDetail>): Promise<{ message: string; trip: TripDetail }> => {
+    const response = await fetch(`${API_BASE}/trips/${tripId}/regenerate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
     });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();

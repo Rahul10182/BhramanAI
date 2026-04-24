@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { planTrip, getUserTrips, getTripById, updateTrip, deleteTrip } from '../controllers/trip.controller.js';
+import { planTrip, getUserTrips, getTripById, updateTrip, deleteTrip, regenerateTrip } from '../controllers/trip.controller.js';
 
 const router = Router();
 
@@ -13,6 +13,7 @@ router.get('/user/:userId', getUserTrips);
 // Individual Trip Operations (Get, Update, Delete)
 router.get('/:tripId', getTripById);
 router.put('/:tripId', updateTrip);
+router.post('/:tripId/regenerate', regenerateTrip);
 router.delete('/:tripId', deleteTrip);
 
 export default router;
