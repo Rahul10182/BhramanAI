@@ -72,7 +72,6 @@ export const updateTrip = async (req: Request, res: Response): Promise<void> => 
     const tripId = req.params.tripId as string;
     const updates = req.body;
 
-    // Find and update the trip, returning the newly updated document
     const updatedTrip = await TripModel.findByIdAndUpdate(tripId, updates, { 
         new: true, 
         runValidators: true 
@@ -87,6 +86,52 @@ export const updateTrip = async (req: Request, res: Response): Promise<void> => 
   } catch (error) {
     console.error("Error updating trip:", error);
     res.status(500).json({ error: 'Failed to update trip' });
+  }
+};
+
+/**
+ * Regenerate: Update trip details + delete old itinerary + re-run AI pipeline
+ */
+export const regenerateTrip = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tripId = req.params.tripId as string;
+    const updates = req.body;
+
+    // 1. Find the existing trip
+    const existingTrip = await TripModel.findById(tripId);
+    if (!existingTrip) {
+      res.status(404).json({ error: 'Trip not found' });
+      return;
+    }
+
+    // 2. Apply updates to trip
+    Object.assign(existingTrip, updates, { status: 'planning' });
+    await existingTrip.save();
+
+    // 3. Delete old itinerary
+    await ItineraryModel.deleteMany({ tripId });
+    console.log(`🗑️ [Regenerate] Deleted old itinerary for trip ${tripId}`);
+
+    // 4. Fire & forget AI regeneration
+    const tripData = {
+      source: existingTrip.source || 'Unknown',
+      destination: existingTrip.destination,
+      start_date: existingTrip.start_date.toISOString(),
+      endDate: existingTrip.endDate.toISOString(),
+      budget: existingTrip.budget,
+      travelers: existingTrip.travelers,
+      travelStyle: existingTrip.travelStyle,
+    };
+    TripService.generateAITrip(tripId, tripData);
+
+    // 5. Return immediately — frontend polls for completion
+    res.status(202).json({
+      message: 'Trip updated and itinerary regeneration started',
+      trip: existingTrip,
+    });
+  } catch (error) {
+    console.error("Error regenerating trip:", error);
+    res.status(500).json({ error: 'Failed to regenerate trip' });
   }
 };
 
