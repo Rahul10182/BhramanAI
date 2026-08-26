@@ -15,7 +15,7 @@ import TripDetailPage from './pages/Trip/TripDetailPage'
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = location.pathname.startsWith('/chat') || location.pathname.startsWith('/trip/');
+  const hideNavbar = location.pathname.startsWith('/trip/');
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">

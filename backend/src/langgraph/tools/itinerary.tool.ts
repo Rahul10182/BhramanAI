@@ -63,11 +63,20 @@ export const saveItineraryTool = new DynamicStructuredTool({
     console.log(`\n==================================================\n`);
 
     try {
+      // 1.5 DEDUPLICATE DAYS (Fix for LLM sometimes generating duplicate day 7)
+      const uniqueDaysMap = new Map();
+      args.days.forEach(day => {
+        if (!uniqueDaysMap.has(day.dayNumber)) {
+          uniqueDaysMap.set(day.dayNumber, day);
+        }
+      });
+      const uniqueDays = Array.from(uniqueDaysMap.values());
+
       // 2. STORE IN DATABASE USING SERVICE
       await ItineraryService.saveGeneratedItinerary(
         args.tripId,
         args.startDate,
-        args.days,
+        uniqueDays,
       );
 
       return JSON.stringify({

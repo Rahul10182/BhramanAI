@@ -27,6 +27,7 @@
     "duck-duck-scrape": "^2.2.7",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "googleapis": "^173.0.0",
     "langchain": "^1.2.39",
     "mongoose": "^9.3.0",
     "openai": "^6.33.0",

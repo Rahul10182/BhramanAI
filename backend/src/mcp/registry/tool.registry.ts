@@ -1,6 +1,7 @@
 import { serverRegistry } from './server.registry.js';
 
 export class ToolRegistry {
+    private static cachedTools: any[] | null = null;
     
     public static async getServerTools(serverClient: any) {
         try {
@@ -21,6 +22,10 @@ export class ToolRegistry {
     }
 
     public static async getAllAvailableTools() {
+        if (this.cachedTools) {
+            return this.cachedTools;
+        }
+
         // FIXED: The variable names now perfectly match the order of the Promise.all array
         const [
             flightTools, 
@@ -38,8 +43,7 @@ export class ToolRegistry {
             this.getServerTools(serverRegistry.distanceTime) // <-- Added new server here
         ]);
 
-        // Combine all arrays together
-        return [
+        this.cachedTools = [
             ...flightTools,
             ...hotelTools,
             ...weatherTools,
@@ -47,6 +51,8 @@ export class ToolRegistry {
             ...activityTools,
             ...distanceTimeTools // <-- Spread new tools into the final array
         ];
+        
+        return this.cachedTools;
     }
 
     public static async getTool(toolName: string) {

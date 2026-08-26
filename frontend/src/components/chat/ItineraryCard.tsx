@@ -22,28 +22,28 @@ const ItineraryCard: React.FC<ItineraryCardProps> = ({ activity, index }) => {
             whileHover={{ x: 4 }}
         >
             {index > 0 && (
-                <div className="absolute left-[19px] top-0 -mt-4 w-[2px] h-12 bg-gradient-to-b from-transparent via-slate-200 to-transparent" />
+                <div className="absolute left-[19px] top-0 -mt-4 w-[2px] h-12 bg-gradient-to-b from-transparent via-[#D6C7B1]/40 to-transparent" />
             )}
 
             <div className="flex gap-4">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${catInfo.gradient} flex items-center justify-center shrink-0 shadow-lg`}>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${catInfo.gradient} flex items-center justify-center shrink-0 shadow-md`}>
                     <IconComponent size={18} className="text-white" />
                 </div>
 
-                <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
+                <div className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#D6C7B1]/20 hover:shadow-md hover:border-[#8BA889]/30 transition-all duration-300">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r ${catInfo.gradient} text-white`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#8BA889]/15 text-[#4A5D4B]`}>
                             {catInfo.label}
                         </span>
-                        <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                        <span className="text-[11px] font-medium text-[#2D2D2D]/40 flex items-center gap-1">
                             <Clock size={12} />
                             {activity.time}
                         </span>
                     </div>
-                    <h4 className="text-base font-bold text-slate-800 mb-1">{activity.title}</h4>
-                    <p className="text-[13px] text-slate-500 leading-relaxed mb-2">{activity.description}</p>
+                    <h4 className="text-base font-bold text-[#2D2D2D] mb-1">{activity.title}</h4>
+                    <p className="text-[13px] text-[#2D2D2D]/50 leading-relaxed mb-2">{activity.description}</p>
                     {activity.location && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#2D2D2D]/40 pt-2 border-t border-[#D6C7B1]/20">
                             <MapPin size={12} />
                             <span>{activity.location}</span>
                         </div>

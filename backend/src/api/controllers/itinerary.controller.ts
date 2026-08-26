@@ -103,7 +103,8 @@ export const deleteItineraryDay = async (req: Request, res: Response): Promise<v
  */
 export const replaceActivity = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dayId, activityIndex } = req.params;
+    const dayId = req.params.dayId as string;
+    const activityIndex = req.params.activityIndex as string;
     const newActivity = req.body;
     const idx = parseInt(activityIndex, 10);
 
@@ -118,13 +119,19 @@ export const replaceActivity = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    const currentActivity = day.activities[idx];
+    if (!currentActivity) {
+      res.status(400).json({ error: 'Invalid activity index' });
+      return;
+    }
+
     // Replace the activity at the given index
     day.activities[idx] = {
-      time: newActivity.time || day.activities[idx].time,
+      time: newActivity.time || currentActivity.time,
       title: newActivity.title,
       description: newActivity.description || '',
       location: newActivity.location || '',
-      category: newActivity.category || day.activities[idx].category,
+      category: newActivity.category || currentActivity.category,
       estimatedCost: newActivity.estimatedCost || 0,
       aiGenerated: false // User-selected, not AI-generated
     };
@@ -148,7 +155,8 @@ export const replaceActivity = async (req: Request, res: Response): Promise<void
  */
 export const getAlternativeActivities = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dayId, activityIndex } = req.params;
+    const dayId = req.params.dayId as string;
+    const activityIndex = req.params.activityIndex as string;
     const idx = parseInt(activityIndex, 10);
 
     const day = await ItineraryModel.findById(dayId);
@@ -163,6 +171,10 @@ export const getAlternativeActivities = async (req: Request, res: Response): Pro
     }
 
     const currentActivity = day.activities[idx];
+    if (!currentActivity) {
+      res.status(400).json({ error: 'Invalid activity index' });
+      return;
+    }
 
     // Get the trip to know the destination
     const trip = await TripModel.findById(day.tripId);

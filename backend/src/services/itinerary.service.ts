@@ -26,7 +26,7 @@ export class ItineraryService {
             const dailyBudget = activities.reduce((sum: number, a: any) => sum + (a.estimatedCost || 0), 0);
 
             return {
-                tripId: new mongoose.Types.ObjectId(tripId),
+                tripId: tripId as unknown as mongoose.Types.ObjectId,
                 dayNumber: dayData.dayNumber,
                 date: dayDate,
                 activities,
@@ -37,14 +37,6 @@ export class ItineraryService {
 
         // 2. Save to DB via Repository
         const savedItineraries = await ItineraryRepository.createBulk(itinerariesToSave);
-        
-        // 3. Update the Trip status to 'completed'
-        try {
-            await TripModel.findByIdAndUpdate(tripId, { status: 'completed' });
-        } catch (tripUpdateError) {
-            console.warn(`⚠️ [Service: Itinerary] Could not update trip status (Trip might not exist in test DB).`);
-        }
-
         console.log(`✅ [Service: Itinerary] Successfully saved to MongoDB.`);
         return savedItineraries;
     }

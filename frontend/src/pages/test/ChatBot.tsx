@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ChatSidebar from '../../components/chat/ChatSidebar';
 import ChatWindow from '../../components/chat/ChatWindow';
 import { chatApi, type TripContext, type ItineraryDay } from '../../apis/chatApi';
@@ -12,6 +12,8 @@ const MAX_POLL_ATTEMPTS = 60; // 5 min max
 const ChatBot: React.FC = () => {
   const { chatId } = useParams<{ chatId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialMessageSentRef = useRef(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -79,6 +81,20 @@ const ChatBot: React.FC = () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  // Handle initial message from home page navigation
+  useEffect(() => {
+    const state = location.state as { initialMessage?: string } | null;
+    if (state?.initialMessage && chatId && !initialMessageSentRef.current && messages.length === 0) {
+      initialMessageSentRef.current = true;
+      // Small delay to ensure component is fully mounted
+      setTimeout(() => {
+        sendMessage(state.initialMessage!);
+      }, 300);
+      // Clear the state so it doesn't re-send on re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, [chatId, location.state, messages.length]);
 
   // ──── Build the message history payload for the backend ────
   const buildMessagesPayload = (allMessages: ChatMessage[]) => {
@@ -242,7 +258,7 @@ const ChatBot: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 h-[100dvh] w-full z-50 bg-slate-50 flex font-sans overflow-hidden text-slate-800">
+    <div className="h-[calc(100dvh-5rem)] w-full bg-slate-50 flex font-sans overflow-hidden text-slate-800">
       <ChatSidebar
         onNewChat={handleNewChat}
         extractedData={extractedData}

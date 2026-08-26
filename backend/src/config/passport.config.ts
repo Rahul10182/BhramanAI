@@ -36,7 +36,7 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
-      scope: ['openid', 'profile', 'email'] // Updated scope for better compatibility
+      scope: ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar.events'] // Added calendar scope
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -68,18 +68,36 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
             provider: 'google'
           };
           
-          // Only add avatar if it exists
           if (profile.photos?.[0]?.value) {
             userData.avatar = profile.photos[0].value;
           }
+          
+          if (accessToken) userData.googleAccessToken = accessToken;
+          if (refreshToken) userData.googleRefreshToken = refreshToken;
           
           user = await UserModel.create(userData);
           console.log(`✅ New user created: ${user.email}`);
         } else {
           // Update existing user if needed
+          let requiresSave = false;
+          
           if (!user.googleId) {
             user.googleId = profile.id;
-            await user.save();
+            requiresSave = true;
+          }
+          
+          // Update tokens to ensure we have the latest (especially if scope changed)
+          if (accessToken && user.googleAccessToken !== accessToken) {
+              user.googleAccessToken = accessToken;
+              requiresSave = true;
+          }
+          if (refreshToken && user.googleRefreshToken !== refreshToken) {
+              user.googleRefreshToken = refreshToken;
+              requiresSave = true;
+          }
+          
+          if (requiresSave) {
+              await user.save();
           }
           console.log(`✅ User logged in: ${user.email}`);
         }

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { TripModel } from '../../database/models/trip.model.js';
 import { ItineraryModel } from '../../database/models/itinerary.model.js'; 
 import { TripService } from '../../services/trip.service.js';
+import { GoogleCalendarService } from '../../services/google-calendar.service.js';
+import { SseService } from '../../services/sse.service.js';
 
 export const planTrip = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -110,4 +112,55 @@ export const deleteTrip = async (req: Request, res: Response): Promise<void> => 
     console.error("Error deleting trip:", error);
     res.status(500).json({ error: 'Failed to delete trip' });
   }
+};
+
+export const confirmTrip = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const tripId = req.params.tripId as string;
+    
+    const userId = (req as any).user?._id?.toString() || (req as any).user?.id?.toString() || req.body.userId;
+    
+    if (!userId) {
+       res.status(401).json({ error: 'Unauthorized' });
+       return;
+    }
+
+    const trip = await TripModel.findByIdAndUpdate(tripId, { status: 'confirmed' }, { new: true });
+    
+    if (!trip) {
+        res.status(404).json({ error: 'Trip not found' });
+        return;
+    }
+
+    try {
+        const eventIds = await GoogleCalendarService.createTripEvents(userId, tripId);
+        res.status(200).json({ 
+            message: 'Trip confirmed and added to Google Calendar', 
+            trip,
+            calendarEvents: eventIds 
+        });
+    } catch (calendarError: any) {
+        console.warn('Trip confirmed but calendar sync failed:', calendarError.message);
+        res.status(200).json({ 
+            message: 'Trip confirmed but failed to add to Google Calendar. Have you connected your Google account?', 
+            trip,
+            calendarSyncError: calendarError.message
+        });
+    }
+
+  } catch (error) {
+    console.error("Error confirming trip:", error);
+    res.status(500).json({ error: 'Failed to confirm trip' });
+  }
+};
+
+export const streamTripProgress = async (req: Request, res: Response): Promise<void> => {
+  const tripId = req.params.tripId as string;
+  
+  if (!tripId) {
+    res.status(400).json({ error: 'Trip ID is required' });
+    return;
+  }
+  
+  SseService.addClient(tripId, req, res);
 };

@@ -42,6 +42,7 @@ export const chatApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, messages }),
+      credentials: 'include',
     });
     
     if (!response.ok) {
@@ -51,7 +52,7 @@ export const chatApi = {
   },
 
   getTripStatus: async (tripId: string) => {
-    const response = await fetch(`${API_BASE}/trips/${tripId}`);
+    const response = await fetch(`${API_BASE}/trips/${tripId}`, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Server error: ${response.status}`);
     }
@@ -59,7 +60,7 @@ export const chatApi = {
   },
 
   getItinerary: async (tripId: string): Promise<ItineraryDay[]> => {
-    const response = await fetch(`${API_BASE}/itineraries/${tripId}`);
+    const response = await fetch(`${API_BASE}/itineraries/${tripId}`, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Server error: ${response.status}`);
     }

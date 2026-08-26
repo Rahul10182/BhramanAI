@@ -42,18 +42,6 @@ export const createSearchHotelsTool = () => {
     });
 };
 
-export const createGetNearbyFoodTool = () => {
-    return new DynamicStructuredTool({
-        name: "get_nearby_food",
-        description: "Find food options near coordinates.",
-        schema: z.object({ lat: z.number(), lon: z.number() }),
-        func: async (args) => {
-            const mcpTool = await ToolRegistry.getTool("get_nearby_food");
-            return logToolExecution("get_nearby_food", args, () => mcpTool.execute(args));
-        }
-    });
-};
-
 export const createGetHotelDetailsTool = () => {
     return new DynamicStructuredTool({
         name: "get_hotel_details",
@@ -84,7 +72,6 @@ export const createCheckHotelAvailabilityTool = () => {
 
 export const createHotelTools = () => [
     createSearchHotelsTool(), 
-    createGetNearbyFoodTool(), 
     createGetHotelDetailsTool(), 
     createCheckHotelAvailabilityTool()
 ];

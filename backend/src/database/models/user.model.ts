@@ -6,6 +6,8 @@ export interface IUser extends Document {
   password?: string;
   avatar?: string;
   googleId?: string;
+  googleAccessToken?: string;
+  googleRefreshToken?: string;
   provider: 'local' | 'google';
   phone?: string;
   location?: string;
@@ -43,6 +45,14 @@ const UserSchema = new Schema<IUser>({
     type: String,
     sparse: true,
     unique: true
+  },
+  googleAccessToken: {
+    type: String,
+    select: false
+  },
+  googleRefreshToken: {
+    type: String,
+    select: false
   },
   provider: { 
     type: String, 

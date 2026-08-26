@@ -46,6 +46,11 @@ export const TravelStateAnnotation = Annotation.Root({
         default: () => "",
     }),
 
+    researchNotes: Annotation<string[]>({
+        reducer: (curr, update) => update,
+        default: () => [],
+    }),
+
     selectedHotels: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],

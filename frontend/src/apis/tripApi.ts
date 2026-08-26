@@ -54,19 +54,19 @@ export interface AlternativesResponse {
 
 export const tripApi = {
   getTripById: async (tripId: string): Promise<TripDetail> => {
-    const response = await fetch(`${API_BASE}/trips/${tripId}`);
+    const response = await fetch(`${API_BASE}/trips/${tripId}`, { credentials: 'include' });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();
   },
 
   getUserTrips: async (userId: string): Promise<TripDetail[]> => {
-    const response = await fetch(`${API_BASE}/trips/user/${userId}`);
+    const response = await fetch(`${API_BASE}/trips/user/${userId}`, { credentials: 'include' });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();
   },
 
   getItinerary: async (tripId: string): Promise<ItineraryDayDetail[]> => {
-    const response = await fetch(`${API_BASE}/itineraries/${tripId}`);
+    const response = await fetch(`${API_BASE}/itineraries/${tripId}`, { credentials: 'include' });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();
   },
@@ -80,6 +80,7 @@ export const tripApi = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(activity),
+      credentials: 'include',
     });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();
@@ -89,7 +90,7 @@ export const tripApi = {
     dayId: string,
     activityIndex: number
   ): Promise<AlternativesResponse> => {
-    const response = await fetch(`${API_BASE}/itineraries/${dayId}/alternatives/${activityIndex}`);
+    const response = await fetch(`${API_BASE}/itineraries/${dayId}/alternatives/${activityIndex}`, { credentials: 'include' });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();
   },
@@ -102,6 +103,7 @@ export const tripApi = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
+      credentials: 'include',
     });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();
@@ -120,6 +122,7 @@ export const tripApi = {
         activities: updated,
         dailyBudget: updated.reduce((sum, a) => sum + (a.estimatedCost || 0), 0),
       }),
+      credentials: 'include',
     });
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return response.json();

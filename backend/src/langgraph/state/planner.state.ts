@@ -48,6 +48,11 @@ export const PlannerStateAnnotation = Annotation.Root({
         default: () => [],
     }),
 
+    estimatedCost: Annotation<number>({
+        reducer: (curr, update) => update ?? curr,
+        default: () => 0,
+    }),
+
     proposedItinerary: Annotation<any[]>({
         reducer: (curr, update) => update, 
         default: () => [],

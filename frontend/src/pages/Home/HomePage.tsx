@@ -103,7 +103,8 @@ const HomePage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim()) {
-      generateDummyItinerary();
+      const chatId = crypto.randomUUID();
+      navigate(`/chat/${chatId}`, { state: { initialMessage: prompt.trim() } });
     }
   };
 
@@ -168,7 +169,10 @@ const HomePage: React.FC = () => {
               {examplePrompts.map((example, i) => (
                 <button
                   key={i}
-                  onClick={() => setPrompt(example)}
+                  onClick={() => {
+                    const chatId = crypto.randomUUID();
+                    navigate(`/chat/${chatId}`, { state: { initialMessage: example } });
+                  }}
                   className="px-4 py-2 bg-white rounded-full text-sm text-[#2D2D2D]/70 hover:bg-[#8BA889]/10 hover:text-[#4A5D4B] transition-all border border-[#D6C7B1]/30"
                 >
                   {example}

@@ -4,6 +4,7 @@ import { distanceTimeLLM } from "../agents/distance-time.agent.js";
 
 // 👉 IMPORT YOUR ROUTING TOOLS HERE (Adjust path to match your actual tools file)
 import { distanceTimeTools } from "../tools/distance-time.tool.js"; 
+import { executeToolLoop } from "../utils/tool-executor.js"; 
 
 export const distanceTimeNode = async (state: typeof TravelStateAnnotation.State) => {
     console.log("🚗 [Node: DistanceTime] Accessing OpenRouteService MCP...");
@@ -14,6 +15,7 @@ export const distanceTimeNode = async (state: typeof TravelStateAnnotation.State
 
     const systemMessage = new SystemMessage({
         content: `You are the BhramanAI Logistics Expert.
+        Source: ${tripContext.source || "Unknown"}
         Destination: ${tripContext.destinations.join(", ")}
 
         CRITICAL INSTRUCTIONS:
@@ -26,24 +28,7 @@ export const distanceTimeNode = async (state: typeof TravelStateAnnotation.State
     let response = await distanceTimeLLM.invoke([systemMessage, ...safeMessages]);
 
     // 3. LOCAL TOOL EXECUTION LOOP
-    if (response.tool_calls && response.tool_calls.length > 0) {
-        console.log(`🛠️ [Node: DistanceTime] Executing ${response.tool_calls.length} tools locally...`);
-        const toolMessages = [];
-        
-        for (const toolCall of response.tool_calls) {
-            const tool = distanceTimeTools.find((t: any) => t.name === toolCall.name);
-            if (tool) {
-                const result = await tool.invoke(toolCall.args);
-                toolMessages.push(new ToolMessage({
-                    tool_call_id: toolCall.id!,
-                    content: typeof result === 'string' ? result : JSON.stringify(result)
-                }));
-            }
-        }
-        
-        // 4. Summarize tool data
-        response = await distanceTimeLLM.invoke([systemMessage, ...safeMessages, response, ...toolMessages]);
-    }
+    response = await executeToolLoop(distanceTimeLLM, systemMessage, safeMessages, response, distanceTimeTools, "DistanceTime");
 
     return { 
         messages: [response]

@@ -5,8 +5,10 @@ import { personalizationAgent } from "../agents/personalization.agent.js";
 export const onboardingNode = async (state: typeof TravelStateAnnotation.State) => {
     console.log("🗣️ [Node: Onboarding] Analyzing chat to extract trip details...");
 
+    const currentDate = new Date().toISOString().split('T')[0];
     const systemPrompt = new SystemMessage(`You are BhramanAI's friendly travel concierge. 
     Analyze the conversation and extract trip requirements. Be conversational, not robotic.
+    The current date is ${currentDate}. Use this to correctly infer years for partial dates.
     Current known data: ${JSON.stringify(state.tripContext)}`);
 
     // Invoke the agent with the system prompt and the entire chat history

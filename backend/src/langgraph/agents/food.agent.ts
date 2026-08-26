@@ -1,14 +1,14 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { createHotelTools } from "../tools/hotel.tool.js";
+import { createFoodTools } from "../tools/food.tool.js";
 
 export const runFoodAgent = async (lat: number, lon: number, destination: string) => {
     console.log(`🤖 [Agent] Finding food options near coordinates (${lat}, ${lon}) in ${destination}...`);
 
     const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", temperature: 0 });
     
-    // We use hotel tools because that's where createGetNearbyFoodTool lives
-    const tools = createHotelTools();
+    // Use specific food tools to reduce tokens
+    const tools = createFoodTools();
 
     const systemPromptText = `
         You are a culinary expert for BhramanAI. 
